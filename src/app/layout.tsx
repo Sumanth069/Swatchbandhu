@@ -5,6 +5,7 @@ import NavigationBar from "@/components/NavigationBar";
 import DesktopHeader from "@/components/DesktopHeader";
 import AuthWrapper from "@/components/AuthWrapper";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import SwipeWrapper from "@/components/SwipeWrapper";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
@@ -37,7 +38,9 @@ export default function RootLayout({
             <DesktopHeader />
             <NavigationBar />
             <main className="flex-1 w-full relative bg-white dark:bg-zinc-950 min-h-[100dvh] shadow-xl overflow-hidden transition-colors duration-300">
-              {children}
+              <SwipeWrapper>
+                {children}
+              </SwipeWrapper>
             </main>
           </AuthWrapper>
         </ThemeProvider>

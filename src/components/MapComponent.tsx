@@ -62,7 +62,7 @@ function MapUpdater({ center }: { center: [number, number] | null }) {
   const map = useMap();
   useEffect(() => {
     if (center && center[0] !== 12.9716) {
-      map.setView(center, map.getZoom(), { animate: true });
+      map.setView(center, 16, { animate: true });
     }
   }, [center, map]);
   return null;

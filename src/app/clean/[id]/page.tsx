@@ -157,7 +157,7 @@ export default function CleanVerifyPage() {
         <h1 className="font-extrabold text-xl text-slate-800 tracking-tight">Verify Cleanup</h1>
       </div>
 
-      <div className="flex-1 p-4 flex flex-col gap-4 overflow-y-auto pb-6">
+      <div className="flex-1 p-4 flex flex-col gap-4 overflow-y-auto pb-32">
         
         {/* Dual Camera View */}
         <div className="bg-white p-3 rounded-3xl shadow-sm border border-slate-100">

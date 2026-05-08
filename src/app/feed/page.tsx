@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
+import { collection, getDocs, orderBy, query, doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { db, auth } from "@/lib/firebase/client";
 import { MapPin, AlertCircle, Heart, MessageCircle, MoreHorizontal, Share2, Bookmark, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -16,6 +16,8 @@ interface Report {
   userId: string;
   type?: string;
   estimatedVolume?: number;
+  likes?: string[];
+  comments?: any[];
 }
 
 export default function FeedPage() {
@@ -27,26 +29,65 @@ export default function FeedPage() {
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [newComment, setNewComment] = useState("");
 
-  const toggleLike = (id: string) => {
-    setLikedPosts(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggleLike = async (id: string) => {
+    const user = auth.currentUser;
+    if (!user) return alert("Please log in to like posts.");
+
+    const isLiked = likedPosts[id];
+    setLikedPosts(prev => ({ ...prev, [id]: !isLiked }));
+    
+    try {
+      await updateDoc(doc(db, "swatchbandhu_v2_reports", id), {
+        likes: isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid)
+      });
+    } catch (e) {
+      console.error("Error updating like", e);
+      setLikedPosts(prev => ({ ...prev, [id]: isLiked })); // revert on error
+    }
   };
 
-  const handlePostComment = () => {
+  const handlePostComment = async () => {
+    const user = auth.currentUser;
+    if (!user) return alert("Please log in to comment.");
     if (!activeCommentId || !newComment.trim()) return;
     
-    setComments(prev => {
-      const existing = prev[activeCommentId] || [];
-      return {
-        ...prev,
-        [activeCommentId]: [...existing, { 
-          id: Date.now().toString(),
-          user: "current_user",
-          text: newComment,
-          time: "Just now"
-        }]
-      };
-    });
+    const commentObj = { 
+      id: Date.now().toString(),
+      userId: user.uid,
+      user: user.displayName || "Citizen",
+      text: newComment,
+      time: new Date().toISOString()
+    };
+
+    setComments(prev => ({
+      ...prev,
+      [activeCommentId]: [...(prev[activeCommentId] || []), commentObj]
+    }));
     setNewComment("");
+
+    try {
+      await updateDoc(doc(db, "swatchbandhu_v2_reports", activeCommentId), {
+        comments: arrayUnion(commentObj)
+      });
+    } catch (e) {
+      console.error("Error posting comment", e);
+    }
+  };
+
+  const handleShare = async (report: Report) => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'SwachBandu Report',
+          text: `Check out this waste report in ${report.location?.name || 'Bengaluru'} on SwachBandu!`,
+          url: `${window.location.origin}/clean/${report.id}`,
+        });
+      } catch (err) {
+        console.error("Error sharing:", err);
+      }
+    } else {
+      alert("Sharing is not supported on this browser.");
+    }
   };
 
   useEffect(() => {
@@ -55,6 +96,23 @@ export default function FeedPage() {
         const q = query(collection(db, "swatchbandhu_v2_reports"));
         const snapshot = await getDocs(q);
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Report[];
+        
+        // Initialize local state from DB
+        const initialLikes: Record<string, boolean> = {};
+        const initialComments: Record<string, any[]> = {};
+        const user = auth.currentUser;
+        
+        data.forEach(d => {
+          if (user && d.likes?.includes(user.uid)) {
+            initialLikes[d.id] = true;
+          }
+          if (d.comments) {
+            initialComments[d.id] = d.comments;
+          }
+        });
+        setLikedPosts(initialLikes);
+        setComments(initialComments);
+
         const sortedData = data.sort((a, b) => new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime());
         setReports(sortedData.filter(r => r.status !== "resolved"));
       } catch (error) {
@@ -138,7 +196,7 @@ export default function FeedPage() {
                           <Heart size={24} strokeWidth={2} className={likedPosts[report.id] ? "fill-red-500 text-red-500" : ""} />
                         </button>
                         <button onClick={() => setActiveCommentId(report.id)} className="hover:opacity-70 transition-opacity active:scale-95 transform"><MessageCircle size={24} className="-scale-x-100" strokeWidth={2} /></button>
-                        <button className="hover:opacity-70 transition-opacity active:scale-95 transform"><Share2 size={22} strokeWidth={2} /></button>
+                        <button onClick={() => handleShare(report)} className="hover:opacity-70 transition-opacity active:scale-95 transform"><Share2 size={22} strokeWidth={2} /></button>
                      </div>
                      <button className="text-slate-900 dark:text-zinc-50 hover:opacity-70 transition-opacity active:scale-95 transform"><Bookmark size={24} strokeWidth={2} /></button>
                   </div>
@@ -146,7 +204,7 @@ export default function FeedPage() {
                   {/* Post Details & Caption */}
                   <div className="px-4 pb-5">
                      <p className="font-bold text-sm text-slate-900 dark:text-zinc-50 mb-1.5">
-                       {likedPosts[report.id] ? 125 : 124} likes
+                       {report.likes?.length ? report.likes.length + (likedPosts[report.id] && !report.likes.includes(auth.currentUser?.uid || "") ? 1 : 0) - (!likedPosts[report.id] && report.likes.includes(auth.currentUser?.uid || "") ? 1 : 0) : (likedPosts[report.id] ? 1 : 0)} likes
                      </p>
                      <p className="text-sm text-slate-900 dark:text-zinc-50 leading-snug">
                         <span className="font-bold mr-2 text-slate-900 dark:text-zinc-50">{isCitizen ? "citizen_hero" : "anonymous_reporter"}</span>
@@ -239,7 +297,7 @@ export default function FeedPage() {
                            {comment.text}
                         </p>
                         <div className="flex items-center gap-4 mt-1.5 text-xs text-slate-500 dark:text-zinc-500 font-medium">
-                           <span>{comment.time}</span>
+                           <span>{new Date(comment.time).toLocaleDateString() === new Date().toLocaleDateString() ? 'Today' : new Date(comment.time).toLocaleDateString()}</span>
                            <button className="hover:text-slate-900 dark:hover:text-zinc-300 transition-colors">Reply</button>
                         </div>
                      </div>

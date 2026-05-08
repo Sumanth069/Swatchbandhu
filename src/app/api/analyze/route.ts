@@ -42,10 +42,18 @@ CRITICAL ACCEPTANCE RULES (Return {"isGarbage": true}):
 1. The image MUST be outdoors (street, land, water, public space).
 2. The image MUST contain actual physical garbage, waste, litter, or pollution dumped illegally.
 
+VOLUME ESTIMATION CALIBRATION:
+- You must carefully calculate the estimatedVolume in kg.
+- Look for scale references: sidewalks, tires, leaves, bricks, or fences.
+- A single plastic bottle or wrapper is ~0.1kg.
+- A full standard garbage bag is ~5kg - 10kg.
+- A massive dump pile covering a street corner could be 50kg - 500kg.
+- Be EXTREMELY accurate and realistic. Do not guess 10kg if it is just one wrapper.
+
 If it passes all rules and is genuine outdoor pollution, analyze it and respond ONLY with raw JSON in this exact structure:
 {
   "isGarbage": boolean,
-  "estimatedVolume": number (in kg, guess if unsure),
+  "estimatedVolume": number (in kg, highly accurate integer),
   "type": "string (e.g. plastic, organic, mixed)",
   "confidence": number (0-100)
 }

@@ -11,7 +11,21 @@ import { useRouter } from "next/navigation";
 export default function ProfilePage() {
   const [stats, setStats] = useState({ reported: 0, cleaned: 0, points: 2450 });
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<{ displayName: string | null; photoURL: string | null } | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    // Listen for auth state
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      if (currentUser) {
+        setUser({
+          displayName: currentUser.displayName,
+          photoURL: currentUser.photoURL
+        });
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     async function fetchStats() {
@@ -67,11 +81,18 @@ export default function ProfilePage() {
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
           className="bg-white dark:bg-zinc-900 rounded-[2rem] p-6 border border-slate-200 dark:border-zinc-800 flex items-center gap-5 relative overflow-hidden shadow-sm"
         >
-          <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-900 dark:text-zinc-100 font-bold text-3xl border-4 border-white dark:border-zinc-900 shadow-sm shrink-0">
-             C
+          <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-900 dark:text-zinc-100 font-bold text-3xl border-4 border-white dark:border-zinc-900 shadow-sm shrink-0 overflow-hidden">
+             {user?.photoURL ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+             ) : (
+                user?.displayName ? user.displayName.charAt(0).toUpperCase() : "C"
+             )}
           </div>
           <div className="flex-1">
-             <h2 className="font-bold text-2xl text-slate-900 dark:text-zinc-50 leading-tight">Citizen Hero</h2>
+             <h2 className="font-bold text-2xl text-slate-900 dark:text-zinc-50 leading-tight">
+               {user?.displayName || "Citizen Hero"}
+             </h2>
              <p className="text-sm font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-1 mt-1">
                <MapPin size={14} className="text-slate-400" /> Bengaluru Urban
              </p>
