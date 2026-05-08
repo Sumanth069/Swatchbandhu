@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/icon.svg" width="120" height="120" alt="SwachBandu Logo" />
+  <img src="src/app/icon.svg" width="120" height="120" alt="SwachBandu Logo" />
   <br/>
   <h1>🌍 SwachBandu 🌍</h1>
   <p><strong>Namma Ooru, Namma Kasa</strong></p>
