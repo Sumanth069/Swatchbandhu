@@ -30,21 +30,25 @@ export async function POST(request: Request) {
 
     const promptText = `
 [SYSTEM DIRECTIVE - MANDATORY OVERRIDE]
-You are a strict security scanner. Your primary job is to detect spoofing. 
-If there is ANY human face, person, selfie, or indoor room in this image, YOU MUST IMMEDIATELY OUTPUT {"isGarbage": false}. No exceptions, even if they are holding trash.
+You are an extremely strict civic environmental inspector. Your ONLY job is to verify illegal outdoor dumping and pollution.
 
-If the image is a genuine outdoor environmental waste pile, then analyze it and respond ONLY with raw JSON in this exact structure:
+CRITICAL REJECTION RULES (Return {"isGarbage": false}):
+1. If the image is inside a building, house, room, office, or vehicle.
+2. If you see indoor walls, ceilings, regular floors, beds, desks, or normal household mess.
+3. If there is a human face, selfie, or person posing.
+4. If it is just a picture of a regular garbage bin or trash can.
+
+CRITICAL ACCEPTANCE RULES (Return {"isGarbage": true}):
+1. The image MUST be outdoors (street, land, water, public space).
+2. The image MUST contain actual physical garbage, waste, litter, or pollution dumped illegally.
+
+If it passes all rules and is genuine outdoor pollution, analyze it and respond ONLY with raw JSON in this exact structure:
 {
   "isGarbage": boolean,
   "estimatedVolume": number (in kg, guess if unsure),
   "type": "string (e.g. plastic, organic, mixed)",
   "confidence": number (0-100)
 }
-
-CRITICAL RULES:
-1. If the image contains a clear human face, a selfie, a person posing, or anything that is clearly NOT environmental waste, you MUST set "isGarbage": false.
-2. If the image is inside a clean house, office, or vehicle without obvious bulk waste, you MUST set "isGarbage": false.
-3. Only return "isGarbage": true if there is actual physical garbage, waste, litter, or pollution visible on the ground or in public.
     `.trim()
 
     const response = await ai.models.generateContent({
@@ -63,6 +67,11 @@ CRITICAL RULES:
     const rawText = response.text || "{}"
     const cleanJsonStr = rawText.replace(/```json/g, '').replace(/```/g, '').trim()
     const result = JSON.parse(cleanJsonStr)
+
+    // Force rejection if confidence is too low or it didn't explicitly say true
+    if (result.confidence < 70) {
+      result.isGarbage = false;
+    }
 
     return NextResponse.json(result)
 

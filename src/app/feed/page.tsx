@@ -21,6 +21,33 @@ interface Report {
 export default function FeedPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
+  
+  // Interactive State
+  const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
+  const [comments, setComments] = useState<Record<string, any[]>>({});
+  const [newComment, setNewComment] = useState("");
+
+  const toggleLike = (id: string) => {
+    setLikedPosts(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handlePostComment = () => {
+    if (!activeCommentId || !newComment.trim()) return;
+    
+    setComments(prev => {
+      const existing = prev[activeCommentId] || [];
+      return {
+        ...prev,
+        [activeCommentId]: [...existing, { 
+          id: Date.now().toString(),
+          user: "current_user",
+          text: newComment,
+          time: "Just now"
+        }]
+      };
+    });
+    setNewComment("");
+  };
 
   useEffect(() => {
     async function fetchFeed() {
@@ -107,7 +134,9 @@ export default function FeedPage() {
                   {/* Post Actions */}
                   <div className="flex items-center justify-between px-4 pt-4 pb-2">
                      <div className="flex items-center gap-4 text-slate-900 dark:text-zinc-50">
-                        <button className="hover:opacity-70 transition-opacity active:scale-95 transform"><Heart size={24} strokeWidth={2} /></button>
+                        <button onClick={() => toggleLike(report.id)} className="hover:opacity-70 transition-opacity active:scale-95 transform">
+                          <Heart size={24} strokeWidth={2} className={likedPosts[report.id] ? "fill-red-500 text-red-500" : ""} />
+                        </button>
                         <button onClick={() => setActiveCommentId(report.id)} className="hover:opacity-70 transition-opacity active:scale-95 transform"><MessageCircle size={24} className="-scale-x-100" strokeWidth={2} /></button>
                         <button className="hover:opacity-70 transition-opacity active:scale-95 transform"><Share2 size={22} strokeWidth={2} /></button>
                      </div>
@@ -116,17 +145,19 @@ export default function FeedPage() {
 
                   {/* Post Details & Caption */}
                   <div className="px-4 pb-5">
-                     <p className="font-bold text-sm text-slate-900 dark:text-zinc-50 mb-1.5">124 likes</p>
+                     <p className="font-bold text-sm text-slate-900 dark:text-zinc-50 mb-1.5">
+                       {likedPosts[report.id] ? 125 : 124} likes
+                     </p>
                      <p className="text-sm text-slate-900 dark:text-zinc-50 leading-snug">
                         <span className="font-bold mr-2 text-slate-900 dark:text-zinc-50">{isCitizen ? "citizen_hero" : "anonymous_reporter"}</span>
-                        Found a pile of <span className="font-semibold">{report.type ? `${report.type} waste` : "mixed waste"}</span> dumped here. Estimated around {report.estimatedVolume || 10}kg. Needs immediate attention! 🚨🌍
+                        AI Verified: Found <span className="font-semibold">{report.type ? report.type : "mixed"} waste</span> dumped here. Estimated volume is {report.estimatedVolume || "unknown"}kg. Needs immediate attention! 🚨🌍
                      </p>
                      
                      <button 
                         onClick={() => setActiveCommentId(report.id)}
                         className="text-slate-500 dark:text-zinc-400 text-sm mt-2 mb-1.5 hover:text-slate-900 dark:hover:text-zinc-50 transition-colors"
                      >
-                        View all 5 comments
+                        View all {(comments[report.id]?.length || 0) + 2} comments
                      </button>
                      
                      <p className="text-[10px] text-slate-500 dark:text-zinc-500 font-medium uppercase tracking-wider">{timeAgo}</p>
@@ -198,12 +229,40 @@ export default function FeedPage() {
                    </div>
                    <button className="ml-auto shrink-0 self-center text-slate-400 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"><Heart size={14} /></button>
                 </div>
+
+                {comments[activeCommentId]?.map(comment => (
+                  <div key={comment.id} className="flex gap-3">
+                     <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-emerald-900 dark:text-emerald-100 font-bold text-xs shrink-0 mt-0.5 border border-emerald-200 dark:border-emerald-800">U</div>
+                     <div>
+                        <p className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">
+                           <span className="font-bold mr-2 text-slate-900 dark:text-zinc-50">{comment.user}</span>
+                           {comment.text}
+                        </p>
+                        <div className="flex items-center gap-4 mt-1.5 text-xs text-slate-500 dark:text-zinc-500 font-medium">
+                           <span>{comment.time}</span>
+                           <button className="hover:text-slate-900 dark:hover:text-zinc-300 transition-colors">Reply</button>
+                        </div>
+                     </div>
+                     <button className="ml-auto shrink-0 self-center text-slate-400 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"><Heart size={14} /></button>
+                  </div>
+                ))}
              </div>
 
              <div className="p-3 px-4 border-t border-slate-100 dark:border-zinc-800 flex items-center gap-3 bg-white dark:bg-zinc-900 mb-safe">
-                <div className="w-8 h-8 rounded-full bg-slate-900 dark:bg-zinc-100 flex items-center justify-center text-white dark:text-zinc-900 font-bold text-xs shrink-0">Y</div>
-                <input type="text" placeholder="Add a comment for citizen_hero..." className="flex-1 bg-transparent border-none px-2 py-2 text-sm focus:ring-0 outline-none text-slate-900 dark:text-zinc-50 placeholder:text-slate-400 dark:placeholder:text-zinc-500" />
-                <button className="text-slate-900 dark:text-zinc-50 font-bold text-sm px-2 hover:opacity-70 transition-opacity">
+                <div className="w-8 h-8 rounded-full bg-slate-900 dark:bg-zinc-100 flex items-center justify-center text-white dark:text-zinc-900 font-bold text-xs shrink-0">U</div>
+                <input 
+                  type="text" 
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handlePostComment()}
+                  placeholder="Add a comment..." 
+                  className="flex-1 bg-transparent border-none px-2 py-2 text-sm focus:ring-0 outline-none text-slate-900 dark:text-zinc-50 placeholder:text-slate-400 dark:placeholder:text-zinc-500" 
+                />
+                <button 
+                  onClick={handlePostComment}
+                  disabled={!newComment.trim()}
+                  className="text-emerald-600 dark:text-emerald-400 font-bold text-sm px-2 hover:opacity-70 transition-opacity disabled:opacity-30"
+                >
                   Post
                 </button>
              </div>
