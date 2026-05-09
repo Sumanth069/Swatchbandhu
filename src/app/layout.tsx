@@ -5,7 +5,6 @@ import NavigationBar from "@/components/NavigationBar";
 import DesktopHeader from "@/components/DesktopHeader";
 import AuthWrapper from "@/components/AuthWrapper";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import SwipeWrapper from "@/components/SwipeWrapper";
 import InstallPrompt from "@/components/InstallPrompt";
 
 const outfit = Outfit({
@@ -40,9 +39,7 @@ export default function RootLayout({
             <DesktopHeader />
             <NavigationBar />
             <main className="flex-1 w-full relative bg-white dark:bg-zinc-950 min-h-[100dvh] shadow-xl transition-colors duration-300">
-              <SwipeWrapper>
-                {children}
-              </SwipeWrapper>
+               {children}
             </main>
             <InstallPrompt />
           </AuthWrapper>
