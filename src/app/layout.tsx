@@ -13,8 +13,8 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "SwachBandu | Clean Your City",
-  description: "Crowdsourced garbage mapping and AI-verified cleanups.",
+  title: "SwachBandhu",
+  description: "Report ಮಾಡಿ , Change ನೋಡಿ",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#09090b" },

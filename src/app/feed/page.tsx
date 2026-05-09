@@ -81,8 +81,8 @@ export default function FeedPage() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'SwachBandu Report',
-          text: `Check out this waste report in ${report.location?.name || 'Bengaluru'} on SwachBandu!`,
+          title: 'SwachBandhu Report',
+          text: `Check out this waste report in ${report.location?.name || 'Bengaluru'} on SwachBandhu!`,
           url: `${window.location.origin}/clean/${report.id}`,
         });
       } catch (err) {
@@ -132,7 +132,7 @@ export default function FeedPage() {
       {/* Header */}
       <div className="bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl px-4 py-3 flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 sticky top-0 z-30 transition-colors duration-300">
         <h1 className="font-bold text-xl text-slate-900 dark:text-zinc-50 tracking-tight" style={{ fontFamily: "var(--font-plus-jakarta)" }}>
-           SwachBandu
+           SwachBandhu
         </h1>
         <div className="flex items-center gap-4 text-slate-900 dark:text-zinc-50">
            <Heart size={24} className="hover:opacity-70 transition-opacity cursor-pointer" strokeWidth={2} />

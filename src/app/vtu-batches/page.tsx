@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { collection, getDocs, doc, updateDoc, arrayUnion } from "firebase/firestore";
-import { db, auth } from "@/lib/firebase/client";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase/client";
 import { GraduationCap, MapPin, Calendar, ArrowLeft, Users, CheckCircle2, ChevronDown, Globe, Lightbulb, Award, HeartHandshake, Map, MessageSquare, Camera, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -10,16 +10,6 @@ import { useRouter } from "next/navigation";
 export default function VTUBatchesPage() {
   const [batches, setBatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedBatch, setSelectedBatch] = useState<any | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  
-  // Form State
-  const [name, setName] = useState("");
-  const [usn, setUsn] = useState("");
-  const [college, setCollege] = useState("");
-  const [phone, setPhone] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const router = useRouter();
 
   // Refs for scrolling
@@ -48,40 +38,11 @@ export default function VTUBatchesPage() {
   };
 
   const handleJoinClick = (batch: any) => {
-    if (!auth.currentUser) {
-      alert("Please log in to join a batch.");
-      return;
+    if (!batch.googleFormLink && !batch.whatsappLink) {
+       alert("No join link provided for this batch.");
+       return;
     }
-    setSelectedBatch(batch);
-    setShowModal(true);
-  };
-
-  const submitJoin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedBatch) return;
-    setIsSubmitting(true);
-
-    try {
-      const user = auth.currentUser;
-      const memberData = {
-        userId: user?.uid,
-        name,
-        usn,
-        college,
-        phone,
-        joinedAt: new Date().toISOString()
-      };
-
-      await updateDoc(doc(db, "swatchbandhu_batches", selectedBatch.id), {
-        currentMembers: arrayUnion(memberData)
-      });
-
-      window.location.href = selectedBatch.whatsappLink;
-    } catch (err) {
-      console.error(err);
-      alert("Failed to join batch.");
-      setIsSubmitting(false);
-    }
+    window.open(batch.googleFormLink || batch.whatsappLink, "_blank");
   };
 
   return (
@@ -292,40 +253,21 @@ export default function VTUBatchesPage() {
             ) : (
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {batches.map(batch => {
-                     const membersCount = batch.currentMembers?.length || 0;
-                     const isFull = membersCount >= batch.maxCapacity;
-                     const vacancies = batch.maxCapacity - membersCount;
-
                      return (
-                        <div key={batch.id} className="bg-white dark:bg-zinc-900 rounded-[2rem] p-6 shadow-lg shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-zinc-800 flex flex-col gap-6 hover:-translate-y-1 transition-transform">
+                        <div key={batch.id} className="bg-white dark:bg-zinc-900 rounded-[2rem] p-6 shadow-lg shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-zinc-800 flex flex-col gap-4 hover:-translate-y-1 transition-transform">
                            <div>
                               <div className="flex justify-between items-start mb-2">
                                  <h3 className="font-black text-2xl text-slate-900 dark:text-white leading-tight">{batch.area}</h3>
-                                 {!isFull ? (
-                                    <span className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-full shrink-0 border border-emerald-200 dark:border-emerald-800">{vacancies} Left</span>
-                                 ) : (
-                                    <span className="bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 text-xs font-bold px-3 py-1.5 rounded-full shrink-0 border border-rose-200 dark:border-rose-800">Full</span>
-                                 )}
+                                 <span className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-full shrink-0 border border-emerald-200 dark:border-emerald-800">Open</span>
                               </div>
                               <p className="text-slate-500 dark:text-zinc-400 font-medium flex items-center gap-2"><Calendar size={16} className="text-blue-500"/> {batch.date}</p>
-                           </div>
-                           
-                           <div className="bg-slate-50 dark:bg-zinc-950 rounded-2xl p-4 border border-slate-100 dark:border-zinc-800">
-                              <div className="flex items-center justify-between mb-2">
-                                 <span className="font-bold text-sm text-slate-700 dark:text-zinc-300 flex items-center gap-2"><Users size={16} /> Capacity</span>
-                                 <span className="font-bold text-sm text-slate-900 dark:text-white">{membersCount} / {batch.maxCapacity}</span>
-                              </div>
-                              <div className="w-full h-2 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                                 <div className={`h-full rounded-full transition-all duration-1000 ${isFull ? 'bg-rose-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min((membersCount / batch.maxCapacity) * 100, 100)}%` }}></div>
-                              </div>
                            </div>
 
                            <button 
                              onClick={() => handleJoinClick(batch)}
-                             disabled={isFull}
-                             className={`w-full font-black py-4 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 ${isFull ? 'bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-600 cursor-not-allowed' : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl hover:opacity-90'}`}
+                             className="w-full font-black py-4 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl hover:opacity-90"
                            >
-                             {isFull ? "No Slots Available" : "Join Batch"}
+                             Join Batch (Google Form)
                            </button>
                         </div>
                      );
@@ -335,44 +277,7 @@ export default function VTUBatchesPage() {
          </div>
       </section>
 
-      {/* Join Modal */}
-      <AnimatePresence>
-        {showModal && selectedBatch && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-             <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={() => setShowModal(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></motion.div>
-             <motion.div initial={{scale:0.95, opacity:0, y:20}} animate={{scale:1, opacity:1, y:0}} exit={{scale:0.95, opacity:0, y:20}} className="bg-white dark:bg-zinc-900 w-full max-w-sm rounded-[2rem] p-8 relative z-10 shadow-2xl border border-slate-200 dark:border-zinc-800">
-                <h3 className="font-black text-2xl text-slate-900 dark:text-white mb-2">Student Details</h3>
-                <p className="text-sm text-slate-500 dark:text-zinc-400 mb-6 font-medium">Verify your student identity to secure your spot for the <strong className="text-slate-900 dark:text-white">{selectedBatch.area}</strong> batch.</p>
-                
-                <form onSubmit={submitJoin} className="flex flex-col gap-4">
-                   <div>
-                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Full Name</label>
-                     <input required type="text" placeholder="John Doe" value={name} onChange={e=>setName(e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-4 py-3 font-medium outline-none focus:border-emerald-500 text-slate-900 dark:text-white transition-colors" />
-                   </div>
-                   <div>
-                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">College Name</label>
-                     <input required type="text" placeholder="e.g. RV College of Engineering" value={college} onChange={e=>setCollege(e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-4 py-3 font-medium outline-none focus:border-emerald-500 text-slate-900 dark:text-white transition-colors" />
-                   </div>
-                   <div>
-                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">USN / Roll Number</label>
-                     <input required type="text" placeholder="1RV21CS001" value={usn} onChange={e=>setUsn(e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-4 py-3 font-medium outline-none focus:border-emerald-500 text-slate-900 dark:text-white transition-colors" />
-                   </div>
-                   <div>
-                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">WhatsApp Number</label>
-                     <input required type="tel" placeholder="+91 98765 43210" value={phone} onChange={e=>setPhone(e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-4 py-3 font-medium outline-none focus:border-emerald-500 text-slate-900 dark:text-white transition-colors" />
-                   </div>
-                   
-                   <button disabled={isSubmitting} type="submit" className="w-full bg-emerald-500 text-white font-black py-4 rounded-xl mt-4 shadow-xl shadow-emerald-500/20 disabled:opacity-50 hover:bg-emerald-600 active:scale-95 transition-all">
-                     {isSubmitting ? "Securing Spot..." : "Join & Open WhatsApp"}
-                   </button>
-                   <button type="button" onClick={() => setShowModal(false)} className="w-full text-slate-500 dark:text-zinc-400 font-bold py-3 mt-1 hover:text-slate-900 dark:hover:text-white transition-colors">
-                     Cancel
-                   </button>
-                </form>
-             </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Removed AnimatePresence Modal because we redirect to Google Forms now */}
 
     </div>
   );

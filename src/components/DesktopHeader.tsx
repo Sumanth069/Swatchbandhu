@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Camera, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "./ThemeToggle";
+import AnimatedTagline from "./AnimatedTagline";
 
 export default function DesktopHeader() {
   const [showQRModal, setShowQRModal] = useState(false);
@@ -25,13 +26,17 @@ export default function DesktopHeader() {
         <div className="pointer-events-auto bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl shadow-sm dark:shadow-none rounded-2xl p-3 px-5 flex items-center justify-between border border-slate-200 dark:border-zinc-800 w-full max-w-7xl mx-auto transition-colors duration-300">
           
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition group">
-            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-zinc-700 transition-transform active:scale-95 duration-200">
-               {/* eslint-disable-next-line @next/next/no-img-element */}
-               <img src="/logo.png" alt="SwachBandhu Logo" className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <h1 className="font-bold text-xl leading-none text-slate-900 dark:text-zinc-50 tracking-tight mb-0.5">SwachBandu</h1>
-              <p className="text-[10px] text-slate-500 dark:text-zinc-400 font-semibold leading-none uppercase tracking-widest">Namma Ooru, Namma Kasa</p>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo.png" alt="SwachBandhu Logo" className="w-10 h-10 object-contain rounded-xl shadow-sm border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900" />
+                <h1 className="font-extrabold text-2xl tracking-tight text-slate-900 dark:text-zinc-50 font-outfit leading-none mt-1">
+                  SwachBandhu
+                </h1>
+              </div>
+              <div className="ml-[3.25rem] -mt-1 text-[11px] text-slate-500 dark:text-zinc-400 font-bold tracking-widest uppercase">
+                <AnimatedTagline />
+              </div>
             </div>
           </Link>
           
@@ -98,7 +103,7 @@ export default function DesktopHeader() {
                 
                 <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm inline-block mb-6">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://swatchbandhu.vercel.app&margin=0" alt="QR Code" className="w-48 h-48" />
+                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://www.swachbandhu.site&margin=0" alt="QR Code" className="w-48 h-48" />
                 </div>
             </motion.div>
           </div>

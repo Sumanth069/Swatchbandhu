@@ -26,7 +26,7 @@ export default function AdminDashboard() {
   // VTU Batch State
   const [batchArea, setBatchArea] = useState("");
   const [batchDate, setBatchDate] = useState("");
-  const [batchLink, setBatchLink] = useState("");
+  const [googleFormLink, setGoogleFormLink] = useState("");
   const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
 
   const router = useRouter();
@@ -104,14 +104,14 @@ export default function AdminDashboard() {
 
   const handleCreateOrUpdateBatch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!batchArea || !batchDate || !batchLink) return alert("Please fill all fields");
+    if (!batchArea || !batchDate || !googleFormLink) return alert("Please fill all fields");
 
     try {
       if (editingBatchId) {
         await updateDoc(doc(db, "swatchbandhu_batches", editingBatchId), {
           area: batchArea,
           date: batchDate,
-          whatsappLink: batchLink,
+          googleFormLink: googleFormLink,
         });
         alert("Batch updated successfully!");
         setEditingBatchId(null);
@@ -119,16 +119,14 @@ export default function AdminDashboard() {
         await addDoc(collection(db, "swatchbandhu_batches"), {
           area: batchArea,
           date: batchDate,
-          whatsappLink: batchLink,
-          maxCapacity: 15,
-          currentMembers: [],
+          googleFormLink: googleFormLink,
           createdAt: new Date().toISOString()
         });
         alert("Batch created successfully!");
       }
       setBatchArea("");
       setBatchDate("");
-      setBatchLink("");
+      setGoogleFormLink("");
       fetchData(); // Refresh to show new batch
     } catch (err) {
       console.error("Failed to save batch", err);
@@ -140,7 +138,7 @@ export default function AdminDashboard() {
      setEditingBatchId(batch.id);
      setBatchArea(batch.area);
      setBatchDate(batch.date);
-     setBatchLink(batch.whatsappLink);
+     setGoogleFormLink(batch.googleFormLink || batch.whatsappLink || "");
      window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -233,15 +231,15 @@ export default function AdminDashboard() {
                     <input type="text" required value={batchDate} onChange={e => setBatchDate(e.target.value)} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-900" placeholder="e.g. Sunday, 10:00 AM" />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">WhatsApp Group Link</label>
-                    <input type="url" required value={batchLink} onChange={e => setBatchLink(e.target.value)} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-900" placeholder="https://chat.whatsapp.com/..." />
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Google Form Link</label>
+                    <input type="url" required value={googleFormLink} onChange={e => setGoogleFormLink(e.target.value)} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-900" placeholder="https://forms.gle/..." />
                   </div>
                   <div className="flex gap-2 mt-2">
                      <button type="submit" className="flex-1 bg-emerald-500 text-white font-bold py-3 rounded-xl hover:bg-emerald-600 transition active:scale-95">
                         {editingBatchId ? "Update Batch" : "Create Batch"}
                      </button>
                      {editingBatchId && (
-                        <button type="button" onClick={() => { setEditingBatchId(null); setBatchArea(''); setBatchDate(''); setBatchLink(''); }} className="bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-xl hover:bg-slate-300 transition active:scale-95">Cancel</button>
+                        <button type="button" onClick={() => { setEditingBatchId(null); setBatchArea(''); setBatchDate(''); setGoogleFormLink(''); }} className="bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-xl hover:bg-slate-300 transition active:scale-95">Cancel</button>
                      )}
                   </div>
                 </form>
@@ -265,8 +263,7 @@ export default function AdminDashboard() {
                              <h3 className="font-bold text-slate-900 pr-12">{batch.area}</h3>
                              <p className="text-xs font-bold text-emerald-600">{batch.date}</p>
                              <div className="text-xs font-medium text-slate-500 flex justify-between items-center mt-1">
-                                <span>{batch.currentMembers?.length || 0} / {batch.maxCapacity} Members</span>
-                                <a href={batch.whatsappLink} target="_blank" className="text-blue-500 hover:underline" rel="noreferrer">WhatsApp Link</a>
+                                <a href={batch.googleFormLink || batch.whatsappLink} target="_blank" className="text-blue-500 hover:underline" rel="noreferrer">Open Google Form</a>
                              </div>
                           </div>
                        ))}

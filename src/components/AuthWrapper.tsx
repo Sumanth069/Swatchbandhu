@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { auth, googleProvider } from "@/lib/firebase/client";
 import { onAuthStateChanged, signInWithPopup, signInWithRedirect, User } from "firebase/auth";
 import { motion } from "framer-motion";
+import AnimatedTagline from "./AnimatedTagline";
 
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -65,17 +66,17 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
            transition={{ delay: 0.1 }}
            className="text-4xl md:text-5xl font-black text-slate-900 dark:text-zinc-50 tracking-tight mb-3"
          >
-           SwachBandu
+           SwachBandhu
          </motion.h1>
          
-         <motion.p 
+         <motion.div 
            initial={{ y: 20, opacity: 0 }}
            animate={{ y: 0, opacity: 1 }}
            transition={{ delay: 0.2 }}
-           className="text-slate-500 dark:text-zinc-400 font-medium text-lg mb-12"
+           className="text-slate-500 dark:text-zinc-400 font-bold text-xl mb-12 uppercase tracking-widest"
          >
-           Namma Ooru, Namma Kasa
-         </motion.p>
+           <AnimatedTagline />
+         </motion.div>
 
          <motion.button
            initial={{ y: 20, opacity: 0 }}
