@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, HeartHandshake, Shield, Sparkles, Code2, Users } from "lucide-react";
+import { ArrowLeft, HeartHandshake, Shield, Sparkles, Code2, Users, Mail, Github, Linkedin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import AnimatedTagline from "@/components/AnimatedTagline";
 
@@ -96,23 +96,51 @@ export default function AboutPage() {
           </p>
 
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-4 bg-slate-50 dark:bg-zinc-950 p-4 rounded-2xl border border-slate-100 dark:border-zinc-800">
-               <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-zinc-800 flex items-center justify-center font-bold text-slate-600 dark:text-zinc-300">
-                  KP
+            {/* KP Sumanth */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 dark:bg-zinc-950 p-4 rounded-2xl border border-slate-100 dark:border-zinc-800">
+               <div className="flex items-center gap-4">
+                 <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-zinc-800 flex items-center justify-center font-bold text-slate-600 dark:text-zinc-300">
+                    KP
+                 </div>
+                 <div>
+                   <h4 className="font-bold text-slate-900 dark:text-white">KP Sumanth</h4>
+                   <p className="text-xs font-bold text-emerald-500 tracking-wider uppercase mt-0.5">Co-Founder & Developer</p>
+                 </div>
                </div>
-               <div>
-                 <h4 className="font-bold text-slate-900 dark:text-white">KP Sumanth</h4>
-                 <p className="text-xs font-bold text-emerald-500 tracking-wider uppercase mt-0.5">Co-Founder & Developer</p>
+               <div className="flex items-center gap-3 pl-16 sm:pl-0">
+                 <a href="mailto:kpsumanth212@gmail.com" className="p-2 bg-white dark:bg-zinc-900 text-slate-400 hover:text-red-500 rounded-full border border-slate-200 dark:border-zinc-800 shadow-sm transition-colors" title="Email Sumanth">
+                   <Mail size={16} />
+                 </a>
+                 <a href="https://github.com/" target="_blank" rel="noreferrer" className="p-2 bg-white dark:bg-zinc-900 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-full border border-slate-200 dark:border-zinc-800 shadow-sm transition-colors" title="GitHub">
+                   <Github size={16} />
+                 </a>
+                 <a href="https://linkedin.com/" target="_blank" rel="noreferrer" className="p-2 bg-white dark:bg-zinc-900 text-slate-400 hover:text-blue-600 rounded-full border border-slate-200 dark:border-zinc-800 shadow-sm transition-colors" title="LinkedIn">
+                   <Linkedin size={16} />
+                 </a>
                </div>
             </div>
             
-            <div className="flex items-center gap-4 bg-slate-50 dark:bg-zinc-950 p-4 rounded-2xl border border-slate-100 dark:border-zinc-800">
-               <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-zinc-800 flex items-center justify-center font-bold text-slate-600 dark:text-zinc-300">
-                  SP
+            {/* Pranav SP */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 dark:bg-zinc-950 p-4 rounded-2xl border border-slate-100 dark:border-zinc-800">
+               <div className="flex items-center gap-4">
+                 <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-zinc-800 flex items-center justify-center font-bold text-slate-600 dark:text-zinc-300">
+                    SP
+                 </div>
+                 <div>
+                   <h4 className="font-bold text-slate-900 dark:text-white">Pranav SP</h4>
+                   <p className="text-xs font-bold text-emerald-500 tracking-wider uppercase mt-0.5">Co-Founder & Developer</p>
+                 </div>
                </div>
-               <div>
-                 <h4 className="font-bold text-slate-900 dark:text-white">Pranav</h4>
-                 <p className="text-xs font-bold text-emerald-500 tracking-wider uppercase mt-0.5">Co-Founder & Developer</p>
+               <div className="flex items-center gap-3 pl-16 sm:pl-0">
+                 <a href="mailto:sppranav2005@gmail.com" className="p-2 bg-white dark:bg-zinc-900 text-slate-400 hover:text-red-500 rounded-full border border-slate-200 dark:border-zinc-800 shadow-sm transition-colors" title="Email Pranav">
+                   <Mail size={16} />
+                 </a>
+                 <a href="https://github.com/" target="_blank" rel="noreferrer" className="p-2 bg-white dark:bg-zinc-900 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-full border border-slate-200 dark:border-zinc-800 shadow-sm transition-colors" title="GitHub">
+                   <Github size={16} />
+                 </a>
+                 <a href="https://linkedin.com/" target="_blank" rel="noreferrer" className="p-2 bg-white dark:bg-zinc-900 text-slate-400 hover:text-blue-600 rounded-full border border-slate-200 dark:border-zinc-800 shadow-sm transition-colors" title="LinkedIn">
+                   <Linkedin size={16} />
+                 </a>
                </div>
             </div>
           </div>
