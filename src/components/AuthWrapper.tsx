@@ -20,17 +20,13 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
 
   const handleGoogleSignIn = async () => {
     try {
-      // Use redirect on mobile (more reliable), popup on desktop
-      const isMobile = window.innerWidth <= 768;
-      
-      if (isMobile) {
-        await signInWithRedirect(auth, googleProvider);
-      } else {
-        await signInWithPopup(auth, googleProvider);
-      }
-    } catch (error) {
+      // Always use popup. signInWithRedirect fails on mobile due to 3rd-party cookie blocking (ITP)
+      await signInWithPopup(auth, googleProvider);
+    } catch (error: any) {
       console.error("Auth failed", error);
-      alert("Failed to sign in. Please try again.");
+      if (error.code !== 'auth/popup-closed-by-user') {
+        alert("Failed to sign in: " + error.message);
+      }
     }
   };
 
