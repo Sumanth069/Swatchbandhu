@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sprout, Camera, X } from "lucide-react";
+import { Camera, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -25,8 +25,9 @@ export default function DesktopHeader() {
         <div className="pointer-events-auto bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl shadow-sm dark:shadow-none rounded-2xl p-3 px-5 flex items-center justify-between border border-slate-200 dark:border-zinc-800 w-full max-w-7xl mx-auto transition-colors duration-300">
           
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition group">
-            <div className="bg-slate-900 dark:bg-zinc-100 p-2.5 rounded-xl text-white dark:text-zinc-900 transition-transform active:scale-95 duration-200">
-              <Sprout size={22} strokeWidth={2.5} />
+            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-zinc-700 transition-transform active:scale-95 duration-200">
+               {/* eslint-disable-next-line @next/next/no-img-element */}
+               <img src="/logo.png" alt="SwachBandhu Logo" className="w-full h-full object-cover" />
             </div>
             <div>
               <h1 className="font-bold text-xl leading-none text-slate-900 dark:text-zinc-50 tracking-tight mb-0.5">SwachBandu</h1>

@@ -3,16 +3,23 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, query } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase/client";
-import { signOut } from "firebase/auth";
+import { signOut, updateProfile } from "firebase/auth";
 import { motion } from "framer-motion";
-import { Award, MapPin, Camera, Sparkles, LogOut, Settings } from "lucide-react";
+import { Award, MapPin, Camera, Sparkles, LogOut, Settings, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
-  const [stats, setStats] = useState({ reported: 0, cleaned: 0, points: 2450 });
+  const [stats, setStats] = useState({ reported: 0, cleaned: 0, points: 0 });
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<{ displayName: string | null; photoURL: string | null } | null>(null);
+  const [user, setUser] = useState<{ displayName: string | null; photoURL: string | null; email: string | null } | null>(null);
+  
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [isSavingName, setIsSavingName] = useState(false);
+  
   const router = useRouter();
+  
+  const ADMIN_EMAILS = ["kpsumanth212@gmail.com"];
 
   useEffect(() => {
     // Listen for auth state
@@ -20,8 +27,10 @@ export default function ProfilePage() {
       if (currentUser) {
         setUser({
           displayName: currentUser.displayName,
-          photoURL: currentUser.photoURL
+          photoURL: currentUser.photoURL,
+          email: currentUser.email
         });
+        setNewName(currentUser.displayName || "");
       }
     });
     return () => unsubscribe();
@@ -70,6 +79,24 @@ export default function ProfilePage() {
     }
   };
 
+  const handleSaveName = async () => {
+    if (!auth.currentUser || !newName.trim()) return;
+    setIsSavingName(true);
+    try {
+      await updateProfile(auth.currentUser, { displayName: newName.trim() });
+      setUser(prev => prev ? { ...prev, displayName: newName.trim() } : null);
+      setIsEditingName(false);
+    } catch (error) {
+      console.error("Failed to update name", error);
+      alert("Failed to update name");
+    } finally {
+      setIsSavingName(false);
+    }
+  };
+
+  const currentLevel = Math.floor(stats.points / 500) + 1;
+  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
+
   return (
     <div className="flex flex-col min-h-[100dvh] bg-slate-50 dark:bg-zinc-950 pb-24 md:pb-12 transition-colors duration-300">
       {/* Header */}
@@ -98,14 +125,29 @@ export default function ProfilePage() {
              )}
           </div>
           <div className="flex-1">
-             <h2 className="font-bold text-2xl text-slate-900 dark:text-zinc-50 leading-tight">
-               {user?.displayName || "Citizen Hero"}
-             </h2>
+             {isEditingName ? (
+               <div className="flex items-center gap-2 mb-1">
+                 <input 
+                   type="text" 
+                   value={newName} 
+                   onChange={(e) => setNewName(e.target.value)}
+                   className="bg-slate-100 dark:bg-zinc-800 border-none rounded-lg px-2 py-1 text-sm font-bold text-slate-900 dark:text-zinc-50 w-full outline-none focus:ring-2 focus:ring-emerald-500"
+                   autoFocus
+                 />
+                 <button onClick={handleSaveName} disabled={isSavingName} className="bg-emerald-500 text-white px-3 py-1 rounded-lg text-xs font-bold disabled:opacity-50">Save</button>
+                 <button onClick={() => setIsEditingName(false)} className="bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300 px-3 py-1 rounded-lg text-xs font-bold">Cancel</button>
+               </div>
+             ) : (
+               <h2 className="font-bold text-2xl text-slate-900 dark:text-zinc-50 leading-tight flex items-center gap-2">
+                 {user?.displayName || "Citizen Hero"}
+                 <button onClick={() => setIsEditingName(true)} className="text-slate-400 hover:text-emerald-500 transition"><Settings size={14}/></button>
+               </h2>
+             )}
              <p className="text-sm font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-1 mt-1">
                <MapPin size={14} className="text-slate-400" /> Bengaluru Urban
              </p>
              <div className="mt-3 inline-flex items-center gap-1.5 bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-800 dark:border-zinc-200 shadow-sm">
-               <Award size={14} /> Level 4 Eco-Warrior
+               <Award size={14} /> Level {currentLevel} Eco-Warrior
              </div>
           </div>
         </motion.div>
@@ -160,12 +202,26 @@ export default function ProfilePage() {
           </div>
         </motion.div>
 
+        {/* Admin Link */}
+        {isAdmin && (
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.35 }}
+            className="mt-2"
+          >
+             <button onClick={() => router.push("/admin")} className="w-full bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg">
+               <Shield size={18} className="text-emerald-500" /> Admin Command Center
+             </button>
+          </motion.div>
+        )}
+
         {/* Logout */}
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="mt-4"
+          className="mt-2"
         >
            <button onClick={handleSignOut} className="w-full bg-white dark:bg-zinc-900 text-red-500 dark:text-red-400 font-bold py-4 rounded-2xl border border-red-200 dark:border-red-900/50 flex items-center justify-center gap-2 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors active:scale-[0.98] shadow-sm">
              <LogOut size={18} /> Sign Out

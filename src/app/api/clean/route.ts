@@ -46,9 +46,10 @@ You are given TWO images:
 
 Your critical task:
 Analyze both images side-by-side to verify if the waste shown in the "Before" photo has genuinely been removed or cleaned in the "After" photo.
-CRITICAL: You must ensure the background/environment looks like the same location. We must prevent fraud (e.g. someone taking a picture of a clean floor in their house).
-If the environment matches but the waste is gone, it is verified.
-If the environment doesn't match at all, it's a spoof.
+CRITICAL FRAUD PREVENTION RULE: You MUST verify that the background, floor texture, lighting, and surrounding environment EXACTLY MATCH between the two photos. 
+- If the user just took a picture of a random clean floor in their house or a different street, you MUST REJECT IT and set "isMatch": false.
+- If the environment perfectly matches but the garbage is still there or just moved slightly, set "isCleaned": false.
+- ONLY if the environment perfectly matches AND the garbage is completely gone, set "isMatch": true and "isCleaned": true.
 
 Respond ONLY with valid, raw JSON in this exact structure:
 {

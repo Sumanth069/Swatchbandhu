@@ -12,7 +12,7 @@ export default function ReportPage() {
   const [isCameraOpen, setIsCameraOpen] = useState(true);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [location, setLocation] = useState<{ lat: number; lon: number } | null>(null);
+  const [location, setLocation] = useState<{ lat: number; lon: number; name?: string } | null>(null);
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
@@ -37,7 +37,18 @@ export default function ReportPage() {
   const fetchLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => setLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          try {
+             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+             const data = await res.json();
+             setLocation({ lat, lon, name: data.display_name?.split(",").slice(0, 2).join(",") || "Bengaluru Urban" });
+          } catch (err) {
+             console.warn("Reverse geocoding failed", err);
+             setLocation({ lat, lon, name: "Bengaluru Urban" });
+          }
+        },
         () => console.warn("Geolocation denied")
       );
     }
@@ -131,7 +142,7 @@ export default function ReportPage() {
         location: {
           lat: location.lat,
           lon: location.lon,
-          name: "Reported via App"
+          name: location.name || "Bengaluru Urban"
         },
         type: aiAnalysis?.type || "mixed",
         estimatedVolume: aiAnalysis?.estimatedVolume || 20,
@@ -275,7 +286,7 @@ export default function ReportPage() {
           </h2>
           {location ? (
             <div className="bg-slate-50 text-emerald-700 p-3 rounded-2xl text-sm font-medium flex items-center justify-between border border-emerald-100">
-              <span className="flex items-center gap-2"><CheckCircle2 size={18} /> GPS Locked</span>
+              <span className="flex items-center gap-2"><CheckCircle2 size={18} /> GPS Locked <span className="text-emerald-900 ml-1 text-xs">{location.name}</span></span>
               <button onClick={fetchLocation} className="text-slate-400 hover:text-emerald-600"><RefreshCw size={16} /></button>
             </div>
           ) : (
