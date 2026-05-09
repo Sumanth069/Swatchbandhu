@@ -12,7 +12,7 @@ service cloud.firestore {
     }
 
     // Reports Collection
-    match /swatchbandhu_reports/{reportId} {
+    match /swatchbandhu_v2_reports/{reportId} {
       // Anyone can read reports (to show on map and feed)
       allow read: if true;
       // Only logged in users can create a report
