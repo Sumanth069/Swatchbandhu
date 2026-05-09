@@ -15,7 +15,11 @@ export default function AnimatedTagline({ className = "" }: { className?: string
   }, []);
 
   return (
-    <div className={`relative overflow-hidden h-[1.2em] w-[90px] inline-block align-bottom ${className}`}>
+    <div className={`relative inline-block align-bottom ${className}`}>
+      {/* Invisible placeholder to reserve exact width of longest text */}
+      <span className="invisible pointer-events-none whitespace-nowrap block h-[1.2em]" aria-hidden="true">
+        CHANGE ನೋಡಿ
+      </span>
       <AnimatePresence mode="wait">
         <motion.span
           key={index}
@@ -23,7 +27,7 @@ export default function AnimatedTagline({ className = "" }: { className?: string
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -20, opacity: 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="absolute inset-0 whitespace-nowrap"
+          className="absolute inset-0 whitespace-nowrap flex justify-center items-center"
         >
           {taglines[index]}
         </motion.span>

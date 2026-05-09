@@ -17,6 +17,7 @@ export default function DesktopHeader() {
     { href: "/feed", label: "Feed" },
     { href: "/vtu-batches", label: "Batches" },
     { href: "/rewards", label: "Rewards" },
+    { href: "/about", label: "About" },
     { href: "/profile", label: "Profile" },
   ];
 

@@ -5,7 +5,7 @@ import { collection, getDocs, query } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase/client";
 import { signOut, updateProfile } from "firebase/auth";
 import { motion } from "framer-motion";
-import { Award, MapPin, Camera, Sparkles, LogOut, Settings, Shield } from "lucide-react";
+import { Award, MapPin, Camera, Sparkles, LogOut, Settings, Shield, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
@@ -202,12 +202,24 @@ export default function ProfilePage() {
           </div>
         </motion.div>
 
+        {/* About Link */}
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.35 }}
+          className="mt-2"
+        >
+           <button onClick={() => router.push("/about")} className="w-full bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-50 font-bold py-4 rounded-2xl border border-slate-200 dark:border-zinc-800 flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-zinc-950 transition-colors active:scale-[0.98] shadow-sm">
+             <Info size={18} className="text-blue-500" /> About SwachBandhu
+           </button>
+        </motion.div>
+
         {/* Admin Link */}
         {isAdmin && (
           <motion.div 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.35 }}
+            transition={{ delay: 0.4 }}
             className="mt-2"
           >
              <button onClick={() => router.push("/admin")} className="w-full bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg">
@@ -220,7 +232,7 @@ export default function ProfilePage() {
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.45 }}
           className="mt-2"
         >
            <button onClick={handleSignOut} className="w-full bg-white dark:bg-zinc-900 text-red-500 dark:text-red-400 font-bold py-4 rounded-2xl border border-red-200 dark:border-red-900/50 flex items-center justify-center gap-2 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors active:scale-[0.98] shadow-sm">
