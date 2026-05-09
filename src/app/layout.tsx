@@ -6,6 +6,7 @@ import DesktopHeader from "@/components/DesktopHeader";
 import AuthWrapper from "@/components/AuthWrapper";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SwipeWrapper from "@/components/SwipeWrapper";
+import InstallPrompt from "@/components/InstallPrompt";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#09090b" },
   ],
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -32,16 +34,17 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${outfit.variable} font-sans h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white text-slate-900 dark:bg-zinc-950 dark:text-zinc-50 transition-colors duration-300 md:overflow-hidden pt-safe-top md:pt-[100px] selection:bg-emerald-500/30">
+      <body className="min-h-full flex flex-col bg-white text-slate-900 dark:bg-zinc-950 dark:text-zinc-50 transition-colors duration-300 pt-safe-top md:pt-[100px] selection:bg-emerald-500/30">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthWrapper>
             <DesktopHeader />
             <NavigationBar />
-            <main className="flex-1 w-full relative bg-white dark:bg-zinc-950 min-h-[100dvh] shadow-xl overflow-hidden transition-colors duration-300">
+            <main className="flex-1 w-full relative bg-white dark:bg-zinc-950 min-h-[100dvh] shadow-xl transition-colors duration-300">
               <SwipeWrapper>
                 {children}
               </SwipeWrapper>
             </main>
+            <InstallPrompt />
           </AuthWrapper>
         </ThemeProvider>
       </body>
