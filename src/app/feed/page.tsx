@@ -18,6 +18,8 @@ interface Report {
   estimatedVolume?: number;
   likes?: string[];
   comments?: any[];
+  userName?: string;
+  commentsDisabled?: boolean;
 }
 
 export default function FeedPage() {
@@ -160,63 +162,72 @@ export default function FeedPage() {
                   transition={{ delay: idx * 0.1, type: "spring", stiffness: 300, damping: 25 }}
                   className="bg-white dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 mb-2 sm:border sm:rounded-2xl sm:my-4 sm:shadow-sm overflow-hidden"
                 >
-                  {/* Post Header */}
-                  <div className="flex items-center justify-between p-3.5">
-                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-900 dark:text-zinc-100 font-bold text-sm border border-slate-200 dark:border-zinc-700">
-                           {isCitizen ? "C" : "A"}
-                        </div>
-                        <div className="flex flex-col">
-                           <span className="font-bold text-sm text-slate-900 dark:text-zinc-50 leading-tight">
-                              {isCitizen ? "citizen_hero" : "anonymous_reporter"}
-                           </span>
-                           <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-1 mt-0.5">
-                              <MapPin size={10} /> {report.location?.name || "Bengaluru Urban"}
-                           </span>
-                        </div>
-                     </div>
-                     <button className="text-slate-400 hover:text-slate-900 dark:hover:text-zinc-50 p-1 transition-colors">
-                        <MoreHorizontal size={20} />
-                     </button>
-                  </div>
+                   {/* Post Header */}
+                   <div className="flex items-center justify-between p-3.5">
+                      <div className="flex items-center gap-3">
+                         <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-900 dark:text-zinc-100 font-bold text-sm border border-slate-200 dark:border-zinc-700">
+                            {isCitizen ? (report.userName?.charAt(0).toUpperCase() || "C") : "A"}
+                         </div>
+                         <div className="flex flex-col">
+                            <span className="font-bold text-sm text-slate-900 dark:text-zinc-50 leading-tight">
+                               {isCitizen ? (report.userName || "Citizen Hero") : "Anonymous Reporter"}
+                            </span>
+                            <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-1 mt-0.5">
+                               <MapPin size={10} /> {report.location?.name || "Bengaluru Urban"}
+                            </span>
+                         </div>
+                      </div>
+                      <button className="text-slate-400 hover:text-slate-900 dark:hover:text-zinc-50 p-1 transition-colors">
+                         <MoreHorizontal size={20} />
+                      </button>
+                   </div>
 
-                  {/* Post Image */}
-                  <div className="w-full aspect-[4/5] bg-slate-100 dark:bg-zinc-950 relative border-y border-slate-200 dark:border-zinc-800">
-                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                     <img src={report.imageUrl} alt="Garbage" className="w-full h-full object-cover" />
-                     <div className="absolute top-3 right-3 bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-50 text-[10px] font-bold px-2.5 py-1 rounded-md shadow-sm border border-slate-200 dark:border-zinc-800 uppercase tracking-widest">
-                        ACTIVE REPORT
-                     </div>
-                  </div>
+                   {/* Post Image */}
+                   <div className="w-full aspect-[4/5] bg-slate-100 dark:bg-zinc-950 relative border-y border-slate-200 dark:border-zinc-800">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={report.imageUrl} alt="Garbage" className="w-full h-full object-cover" />
+                      <div className="absolute top-3 right-3 bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-50 text-[10px] font-bold px-2.5 py-1 rounded-md shadow-sm border border-slate-200 dark:border-zinc-800 uppercase tracking-widest">
+                         ACTIVE REPORT
+                      </div>
+                   </div>
 
-                  {/* Post Actions */}
-                  <div className="flex items-center justify-between px-4 pt-4 pb-2">
-                     <div className="flex items-center gap-4 text-slate-900 dark:text-zinc-50">
-                        <button onClick={() => toggleLike(report.id)} className="hover:opacity-70 transition-opacity active:scale-95 transform">
-                          <Heart size={24} strokeWidth={2} className={likedPosts[report.id] ? "fill-red-500 text-red-500" : ""} />
+                   {/* Post Actions */}
+                   <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                      <div className="flex items-center gap-4 text-slate-900 dark:text-zinc-50">
+                         <button onClick={() => toggleLike(report.id)} className="hover:opacity-70 transition-opacity active:scale-95 transform">
+                           <Heart size={24} strokeWidth={2} className={likedPosts[report.id] ? "fill-red-500 text-red-500" : ""} />
+                         </button>
+                         <button 
+                            onClick={() => !report.commentsDisabled && setActiveCommentId(report.id)} 
+                            className={`transition-opacity active:scale-95 transform ${report.commentsDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-70'}`}
+                         >
+                            <MessageCircle size={24} className="-scale-x-100" strokeWidth={2} />
+                         </button>
+                         <button onClick={() => handleShare(report)} className="hover:opacity-70 transition-opacity active:scale-95 transform"><Share2 size={22} strokeWidth={2} /></button>
+                      </div>
+                      <button className="text-slate-900 dark:text-zinc-50 hover:opacity-70 transition-opacity active:scale-95 transform"><Bookmark size={24} strokeWidth={2} /></button>
+                   </div>
+
+                   {/* Post Details & Caption */}
+                   <div className="px-4 pb-5">
+                      <p className="font-bold text-sm text-slate-900 dark:text-zinc-50 mb-1.5">
+                        {report.likes?.length ? report.likes.length + (likedPosts[report.id] && !report.likes.includes(auth.currentUser?.uid || "") ? 1 : 0) - (!likedPosts[report.id] && report.likes.includes(auth.currentUser?.uid || "") ? 1 : 0) : (likedPosts[report.id] ? 1 : 0)} likes
+                      </p>
+                      <p className="text-sm text-slate-900 dark:text-zinc-50 leading-snug">
+                         <span className="font-bold mr-2 text-slate-900 dark:text-zinc-50">{isCitizen ? (report.userName || "Citizen Hero") : "Anonymous Reporter"}</span>
+                         AI Verified: Found <span className="font-semibold">{report.type ? report.type : "mixed"} waste</span> dumped here. Estimated volume is {report.estimatedVolume || "unknown"}kg. Needs immediate attention! 🚨🌍
+                      </p>
+                      
+                      {!report.commentsDisabled ? (
+                        <button 
+                           onClick={() => setActiveCommentId(report.id)}
+                           className="text-slate-500 dark:text-zinc-400 text-sm mt-2 mb-1.5 hover:text-slate-900 dark:hover:text-zinc-50 transition-colors"
+                        >
+                           View all {comments[report.id]?.length || 0} comments
                         </button>
-                        <button onClick={() => setActiveCommentId(report.id)} className="hover:opacity-70 transition-opacity active:scale-95 transform"><MessageCircle size={24} className="-scale-x-100" strokeWidth={2} /></button>
-                        <button onClick={() => handleShare(report)} className="hover:opacity-70 transition-opacity active:scale-95 transform"><Share2 size={22} strokeWidth={2} /></button>
-                     </div>
-                     <button className="text-slate-900 dark:text-zinc-50 hover:opacity-70 transition-opacity active:scale-95 transform"><Bookmark size={24} strokeWidth={2} /></button>
-                  </div>
-
-                  {/* Post Details & Caption */}
-                  <div className="px-4 pb-5">
-                     <p className="font-bold text-sm text-slate-900 dark:text-zinc-50 mb-1.5">
-                       {report.likes?.length ? report.likes.length + (likedPosts[report.id] && !report.likes.includes(auth.currentUser?.uid || "") ? 1 : 0) - (!likedPosts[report.id] && report.likes.includes(auth.currentUser?.uid || "") ? 1 : 0) : (likedPosts[report.id] ? 1 : 0)} likes
-                     </p>
-                     <p className="text-sm text-slate-900 dark:text-zinc-50 leading-snug">
-                        <span className="font-bold mr-2 text-slate-900 dark:text-zinc-50">{isCitizen ? "citizen_hero" : "anonymous_reporter"}</span>
-                        AI Verified: Found <span className="font-semibold">{report.type ? report.type : "mixed"} waste</span> dumped here. Estimated volume is {report.estimatedVolume || "unknown"}kg. Needs immediate attention! 🚨🌍
-                     </p>
-                     
-                     <button 
-                        onClick={() => setActiveCommentId(report.id)}
-                        className="text-slate-500 dark:text-zinc-400 text-sm mt-2 mb-1.5 hover:text-slate-900 dark:hover:text-zinc-50 transition-colors"
-                     >
-                        View all {(comments[report.id]?.length || 0) + 2} comments
-                     </button>
+                      ) : (
+                        <p className="text-slate-400 dark:text-zinc-500 text-xs font-bold mt-2 mb-1.5 uppercase tracking-wider">Comments Disabled</p>
+                      )}
                      
                      <p className="text-[10px] text-slate-500 dark:text-zinc-500 font-medium uppercase tracking-wider">{timeAgo}</p>
 
@@ -258,52 +269,28 @@ export default function FeedPage() {
              </div>
              
              <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-6">
-                <div className="flex gap-3">
-                   <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-900 dark:text-zinc-100 font-bold text-xs shrink-0 mt-0.5 border border-slate-200 dark:border-zinc-700">K</div>
-                   <div>
-                      <p className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">
-                         <span className="font-bold mr-2 text-slate-900 dark:text-zinc-50">kiran_kumar</span>
-                         I saw this yesterday! Disgusting. Planning to go clean it tomorrow morning if anyone wants to join.
-                      </p>
-                      <div className="flex items-center gap-4 mt-1.5 text-xs text-slate-500 dark:text-zinc-500 font-medium">
-                         <span>2h</span>
-                         <button className="hover:text-slate-900 dark:hover:text-zinc-300 transition-colors">Reply</button>
-                      </div>
-                   </div>
-                   <button className="ml-auto shrink-0 self-center text-slate-400 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"><Heart size={14} /></button>
-                </div>
-
-                <div className="flex gap-3">
-                   <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-900 dark:text-zinc-100 font-bold text-xs shrink-0 mt-0.5 border border-slate-200 dark:border-zinc-700">S</div>
-                   <div>
-                      <p className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">
-                         <span className="font-bold mr-2 text-slate-900 dark:text-zinc-50">sumanth_kp</span>
-                         Count me in Kiran. I'll bring the trash bags.
-                      </p>
-                      <div className="flex items-center gap-4 mt-1.5 text-xs text-slate-500 dark:text-zinc-500 font-medium">
-                         <span>1h</span>
-                         <button className="hover:text-slate-900 dark:hover:text-zinc-300 transition-colors">Reply</button>
-                      </div>
-                   </div>
-                   <button className="ml-auto shrink-0 self-center text-slate-400 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"><Heart size={14} /></button>
-                </div>
-
-                {comments[activeCommentId]?.map(comment => (
-                  <div key={comment.id} className="flex gap-3">
-                     <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-emerald-900 dark:text-emerald-100 font-bold text-xs shrink-0 mt-0.5 border border-emerald-200 dark:border-emerald-800">U</div>
-                     <div>
-                        <p className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">
-                           <span className="font-bold mr-2 text-slate-900 dark:text-zinc-50">{comment.user}</span>
-                           {comment.text}
-                        </p>
-                        <div className="flex items-center gap-4 mt-1.5 text-xs text-slate-500 dark:text-zinc-500 font-medium">
-                           <span>{new Date(comment.time).toLocaleDateString() === new Date().toLocaleDateString() ? 'Today' : new Date(comment.time).toLocaleDateString()}</span>
-                           <button className="hover:text-slate-900 dark:hover:text-zinc-300 transition-colors">Reply</button>
-                        </div>
-                     </div>
-                     <button className="ml-auto shrink-0 self-center text-slate-400 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"><Heart size={14} /></button>
-                  </div>
-                ))}
+                {comments[activeCommentId]?.length === 0 || !comments[activeCommentId] ? (
+                  <div className="text-slate-400 text-center py-10 text-sm font-medium">No comments yet. Be the first!</div>
+                ) : (
+                  comments[activeCommentId]?.map(comment => (
+                    <div key={comment.id} className="flex gap-3">
+                       <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-emerald-900 dark:text-emerald-100 font-bold text-xs shrink-0 mt-0.5 border border-emerald-200 dark:border-emerald-800">
+                         {comment.user ? comment.user.charAt(0).toUpperCase() : "U"}
+                       </div>
+                       <div>
+                          <p className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">
+                             <span className="font-bold mr-2 text-slate-900 dark:text-zinc-50">{comment.user}</span>
+                             {comment.text}
+                          </p>
+                          <div className="flex items-center gap-4 mt-1.5 text-xs text-slate-500 dark:text-zinc-500 font-medium">
+                             <span>{new Date(comment.time).toLocaleDateString() === new Date().toLocaleDateString() ? 'Today' : new Date(comment.time).toLocaleDateString()}</span>
+                             <button className="hover:text-slate-900 dark:hover:text-zinc-300 transition-colors">Reply</button>
+                          </div>
+                       </div>
+                       <button className="ml-auto shrink-0 self-center text-slate-400 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"><Heart size={14} /></button>
+                    </div>
+                  ))
+                )}
              </div>
 
              <div className="p-3 px-4 border-t border-slate-100 dark:border-zinc-800 flex items-center gap-3 bg-white dark:bg-zinc-900 mb-safe">

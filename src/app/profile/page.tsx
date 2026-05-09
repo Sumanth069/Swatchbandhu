@@ -29,20 +29,28 @@ export default function ProfilePage() {
 
   useEffect(() => {
     async function fetchStats() {
+      if (!user) return;
       try {
         const q = query(collection(db, "swatchbandhu_v2_reports"));
         const snapshot = await getDocs(q);
         let reported = 0;
         let cleaned = 0;
+        
+        const currentUserId = auth.currentUser?.uid;
+        
         snapshot.forEach(doc => {
-          reported++;
-          if (doc.data().status === "resolved") cleaned++;
+          const data = doc.data();
+          // Count if user reported it
+          if (data.userId === currentUserId) reported++;
+          // Wait, 'cleaned' implies someone cleaned it. Currently we don't track cleaner userId easily, but let's assume if status is resolved and they reported it, it counts. 
+          // Or if they clicked "I cleaned this". For now, we'll track resolved reports they created.
+          if (data.userId === currentUserId && data.status === "resolved") cleaned++;
         });
         
         setStats({
-          reported: Math.max(1, Math.floor(reported * 0.2)),
-          cleaned: Math.max(0, Math.floor(cleaned * 0.5)),
-          points: cleaned * 100 || 2450
+          reported: reported,
+          cleaned: cleaned,
+          points: (cleaned * 100) + (reported * 10)
         });
       } catch (error) {
         console.error("Error fetching stats:", error);
@@ -50,8 +58,8 @@ export default function ProfilePage() {
         setLoading(false);
       }
     }
-    fetchStats();
-  }, []);
+    if (user) fetchStats();
+  }, [user]);
 
   const handleSignOut = async () => {
     try {

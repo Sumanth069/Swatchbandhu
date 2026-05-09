@@ -2,8 +2,8 @@
 
 import React, { useState, useRef, useEffect } from "react";
 
-import { Camera, MapPin, UploadCloud, ArrowLeft, RefreshCw, CheckCircle2, AlertTriangle, ScanSearch } from "lucide-react";
-import { db } from "@/lib/firebase/client";
+import { Camera, MapPin, UploadCloud, ArrowLeft, RefreshCw, CheckCircle2, AlertTriangle, ScanSearch, Shield } from "lucide-react";
+import { db, auth } from "@/lib/firebase/client";
 import { collection, addDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -20,6 +20,10 @@ export default function ReportPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   
+  // Privacy State
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [commentsDisabled, setCommentsDisabled] = useState(false);
+
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -134,6 +138,9 @@ export default function ReportPage() {
         status: "active",
         reportedAt: new Date().toISOString(),
         source: "Citizen App",
+        userId: isAnonymous ? "anonymous" : (auth.currentUser?.uid || "unknown"),
+        userName: isAnonymous ? "Anonymous Hero" : (auth.currentUser?.displayName || "Citizen Hero"),
+        commentsDisabled: commentsDisabled
       });
       setSuccess(true);
       setTimeout(() => router.push("/"), 2000);
@@ -276,6 +283,22 @@ export default function ReportPage() {
               <RefreshCw className="animate-spin shrink-0" size={16} /> Waiting for GPS...
             </div>
           )}
+        </div>
+
+        {/* Privacy Toggles */}
+        <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex flex-col gap-3">
+           <h2 className="font-semibold text-slate-700 mb-1 flex items-center gap-2">
+             <Shield size={18} className="text-slate-500" />
+             Privacy Controls
+           </h2>
+           <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-sm font-medium text-slate-600">Post Anonymously</span>
+              <input type="checkbox" checked={isAnonymous} onChange={e=>setIsAnonymous(e.target.checked)} className="w-5 h-5 accent-emerald-500 rounded" />
+           </label>
+           <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-sm font-medium text-slate-600">Turn off Comments</span>
+              <input type="checkbox" checked={commentsDisabled} onChange={e=>setCommentsDisabled(e.target.checked)} className="w-5 h-5 accent-emerald-500 rounded" />
+           </label>
         </div>
 
         <button 

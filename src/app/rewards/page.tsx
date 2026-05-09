@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, query } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db, auth } from "@/lib/firebase/client";
 import { motion } from "framer-motion";
-import { Gift, Wallet, GraduationCap, CalendarDays } from "lucide-react";
 import Link from "next/link";
+import { Gift, Wallet, GraduationCap, CalendarDays } from "lucide-react";
 import React from "react";
 
 export default function RewardsPage() {
@@ -13,8 +13,9 @@ export default function RewardsPage() {
 
   useEffect(() => {
     async function fetchCoins() {
+      if (!auth.currentUser) return setCoins(0);
       try {
-        const q = query(collection(db, "swatchbandhu_v2_reports"));
+        const q = query(collection(db, "swatchbandhu_v2_reports"), where("userId", "==", auth.currentUser.uid));
         const snapshot = await getDocs(q);
         let cleaned = 0;
         snapshot.forEach(doc => {
@@ -26,7 +27,11 @@ export default function RewardsPage() {
         setCoins(0);
       }
     }
-    fetchCoins();
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) fetchCoins();
+      else setCoins(0);
+    });
+    return () => unsubscribe();
   }, []);
 
   return (
@@ -75,16 +80,8 @@ export default function RewardsPage() {
             <p className="text-slate-500 dark:text-zinc-400 text-sm mt-1.5 mb-6 leading-relaxed relative z-10">
               Verify 5 cleanups to automatically generate your official Activity Certificate for VTU submissions.
             </p>
-            <div className="w-full bg-slate-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden mb-4 relative z-10">
-               <motion.div 
-                 initial={{ width: 0 }}
-                 animate={{ width: "60%" }}
-                 transition={{ duration: 1, ease: "easeOut" }}
-                 className="bg-slate-900 dark:bg-zinc-100 h-full rounded-full"
-               ></motion.div>
-            </div>
             <div className="flex justify-between items-center mt-6 relative z-10">
-              <p className="text-sm font-bold text-slate-700 dark:text-zinc-300">3 / 5 Cleanups</p>
+              <p className="text-sm font-bold text-slate-700 dark:text-zinc-300">Join a weekend mega-cleanup.</p>
               <div className="bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 group-hover:opacity-90 transition-opacity active:scale-95">
                  <CalendarDays size={16} /> Join Live Batch
               </div>
