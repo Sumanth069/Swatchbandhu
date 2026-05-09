@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, HeartHandshake, Shield, Sparkles, Code2, Users, Mail, Github, Linkedin } from "lucide-react";
+import { ArrowLeft, HeartHandshake, Shield, Sparkles, Code2, Users, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import AnimatedTagline from "@/components/AnimatedTagline";
 
@@ -111,12 +111,6 @@ export default function AboutPage() {
                  <a href="mailto:kpsumanth212@gmail.com" className="p-2 bg-white dark:bg-zinc-900 text-slate-400 hover:text-red-500 rounded-full border border-slate-200 dark:border-zinc-800 shadow-sm transition-colors" title="Email Sumanth">
                    <Mail size={16} />
                  </a>
-                 <a href="https://github.com/" target="_blank" rel="noreferrer" className="p-2 bg-white dark:bg-zinc-900 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-full border border-slate-200 dark:border-zinc-800 shadow-sm transition-colors" title="GitHub">
-                   <Github size={16} />
-                 </a>
-                 <a href="https://linkedin.com/" target="_blank" rel="noreferrer" className="p-2 bg-white dark:bg-zinc-900 text-slate-400 hover:text-blue-600 rounded-full border border-slate-200 dark:border-zinc-800 shadow-sm transition-colors" title="LinkedIn">
-                   <Linkedin size={16} />
-                 </a>
                </div>
             </div>
             
@@ -134,12 +128,6 @@ export default function AboutPage() {
                <div className="flex items-center gap-3 pl-16 sm:pl-0">
                  <a href="mailto:sppranav2005@gmail.com" className="p-2 bg-white dark:bg-zinc-900 text-slate-400 hover:text-red-500 rounded-full border border-slate-200 dark:border-zinc-800 shadow-sm transition-colors" title="Email Pranav">
                    <Mail size={16} />
-                 </a>
-                 <a href="https://github.com/" target="_blank" rel="noreferrer" className="p-2 bg-white dark:bg-zinc-900 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-full border border-slate-200 dark:border-zinc-800 shadow-sm transition-colors" title="GitHub">
-                   <Github size={16} />
-                 </a>
-                 <a href="https://linkedin.com/" target="_blank" rel="noreferrer" className="p-2 bg-white dark:bg-zinc-900 text-slate-400 hover:text-blue-600 rounded-full border border-slate-200 dark:border-zinc-800 shadow-sm transition-colors" title="LinkedIn">
-                   <Linkedin size={16} />
                  </a>
                </div>
             </div>
