@@ -1,0 +1,45 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Check if the user is an admin
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.email == 'kpsumanth212@gmail.com' || 
+        request.auth.token.email == 'sppranav2005@gmail.com'
+      );
+    }
+
+    // Reports Collection
+    match /swatchbandhu_reports/{reportId} {
+      // Anyone can read reports (to show on map and feed)
+      allow read: if true;
+      // Only logged in users can create a report
+      allow create: if request.auth != null;
+      // Only admins can delete or update existing reports
+      allow update, delete: if isAdmin();
+    }
+
+    // Batches Collection
+    match /swatchbandhu_batches/{batchId} {
+      // Anyone can read batches
+      allow read: if true;
+      // Only admins can create, update, or delete batches
+      allow write: if isAdmin();
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      // Users can only read and write their own profile
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Admins can read or write any user profile
+      allow read, write: if isAdmin();
+    }
+    
+    // Default deny for anything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

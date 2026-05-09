@@ -17,7 +17,7 @@ export default function NavigationBar() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border-t border-slate-200 dark:border-zinc-800 pb-safe md:hidden transition-colors duration-300">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border-t border-slate-200 dark:border-zinc-800 pb-[env(safe-area-inset-bottom)] md:hidden transition-colors duration-300">
       <div className="flex justify-around items-center h-16 px-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (pathname.startsWith("/clean") && item.href === "/feed");

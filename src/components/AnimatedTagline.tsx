@@ -10,12 +10,12 @@ export default function AnimatedTagline({ className = "" }: { className?: string
   useEffect(() => {
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % taglines.length);
-    }, 3000);
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className={`relative overflow-hidden h-[1.2em] inline-block align-bottom ${className}`}>
+    <div className={`relative overflow-hidden h-[1.2em] w-[90px] inline-block align-bottom ${className}`}>
       <AnimatePresence mode="wait">
         <motion.span
           key={index}
@@ -28,7 +28,6 @@ export default function AnimatedTagline({ className = "" }: { className?: string
           {taglines[index]}
         </motion.span>
       </AnimatePresence>
-      <span className="opacity-0 pointer-events-none">{taglines[1]}</span>
     </div>
   );
 }
