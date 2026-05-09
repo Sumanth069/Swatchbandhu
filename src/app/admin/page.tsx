@@ -8,13 +8,13 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
 // Hardcoded initial admin
-const ADMIN_EMAILS = ["kpsumanth212@gmail.com"];
+const ADMIN_EMAILS = ["kpsumanth212@gmail.com", "sppranav2005@gmail.com"];
 
 export default function AdminDashboard() {
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  
+
   // VTU Batch State
   const [batchArea, setBatchArea] = useState("");
   const [batchDate, setBatchDate] = useState("");
@@ -66,7 +66,7 @@ export default function AdminDashboard() {
   const handleCreateBatch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!batchArea || !batchDate || !batchLink) return alert("Please fill all fields");
-    
+
     try {
       await addDoc(collection(db, "swatchbandhu_batches"), {
         area: batchArea,
@@ -109,36 +109,36 @@ export default function AdminDashboard() {
       </div>
 
       <div className="p-4 md:p-6 flex flex-col gap-6 max-w-4xl mx-auto w-full -mt-6">
-        
+
         {/* Controls Grid */}
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col gap-2">
-             <FileText size={24} className="text-blue-500" />
-             <span className="text-2xl font-black text-slate-900">{reports.length}</span>
-             <span className="text-xs font-bold text-slate-500 uppercase">Total Reports</span>
+            <FileText size={24} className="text-blue-500" />
+            <span className="text-2xl font-black text-slate-900">{reports.length}</span>
+            <span className="text-xs font-bold text-slate-500 uppercase">Total Reports</span>
           </div>
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col gap-2">
-             <Users size={24} className="text-emerald-500" />
-             <span className="text-2xl font-black text-slate-900">Active</span>
-             <span className="text-xs font-bold text-slate-500 uppercase">System Status</span>
+            <Users size={24} className="text-emerald-500" />
+            <span className="text-2xl font-black text-slate-900">Active</span>
+            <span className="text-xs font-bold text-slate-500 uppercase">System Status</span>
           </div>
         </div>
 
         {/* VTU Batch Creation */}
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden p-6">
-          <h2 className="font-bold text-lg text-slate-900 mb-4 flex items-center gap-2"><PlusCircle size={20} className="text-emerald-500"/> Create VTU Activity Batch</h2>
+          <h2 className="font-bold text-lg text-slate-900 mb-4 flex items-center gap-2"><PlusCircle size={20} className="text-emerald-500" /> Create VTU Activity Batch</h2>
           <form onSubmit={handleCreateBatch} className="flex flex-col gap-4">
             <div>
-               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Cleanup Area</label>
-               <input type="text" required value={batchArea} onChange={e=>setBatchArea(e.target.value)} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Indiranagar Metro Station" />
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Cleanup Area</label>
+              <input type="text" required value={batchArea} onChange={e => setBatchArea(e.target.value)} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Indiranagar Metro Station" />
             </div>
             <div>
-               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Date & Time</label>
-               <input type="text" required value={batchDate} onChange={e=>setBatchDate(e.target.value)} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Sunday, 10:00 AM" />
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Date & Time</label>
+              <input type="text" required value={batchDate} onChange={e => setBatchDate(e.target.value)} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Sunday, 10:00 AM" />
             </div>
             <div>
-               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">WhatsApp Group Link</label>
-               <input type="url" required value={batchLink} onChange={e=>setBatchLink(e.target.value)} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="https://chat.whatsapp.com/..." />
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">WhatsApp Group Link</label>
+              <input type="url" required value={batchLink} onChange={e => setBatchLink(e.target.value)} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="https://chat.whatsapp.com/..." />
             </div>
             <button type="submit" className="bg-emerald-500 text-white font-bold py-3 rounded-xl mt-2 hover:bg-emerald-600 transition">Create Batch (15 Max)</button>
           </form>
@@ -150,26 +150,26 @@ export default function AdminDashboard() {
             <h2 className="font-bold text-lg text-slate-900">Live Database Feed</h2>
             <button onClick={fetchReports} className="text-sm font-bold text-emerald-600 hover:opacity-70">Refresh</button>
           </div>
-          
+
           <div className="divide-y divide-slate-100">
             {reports.map(report => (
               <div key={report.id} className="p-4 flex gap-4 items-center">
-                 <div className="w-16 h-16 rounded-xl bg-slate-100 shrink-0 overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={report.imageUrl} alt="report" className="w-full h-full object-cover" />
-                 </div>
-                 <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-900 truncate">ID: {report.id}</p>
-                    <p className="text-xs font-medium text-slate-500 truncate">User: {report.userId}</p>
-                    <div className="flex gap-2 mt-1">
-                      <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">{report.status}</span>
-                      <span className="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded capitalize">{report.type}</span>
-                    </div>
-                 </div>
-                 <div className="flex flex-col gap-2 shrink-0">
-                    <button onClick={() => handleDeleteReport(report.id)} className="bg-rose-50 text-rose-600 p-2 rounded-lg hover:bg-rose-100 transition"><Trash2 size={16}/></button>
-                    <button onClick={() => handleBlockUser(report.userId)} className="bg-orange-50 text-orange-600 p-2 rounded-lg hover:bg-orange-100 transition"><Ban size={16}/></button>
-                 </div>
+                <div className="w-16 h-16 rounded-xl bg-slate-100 shrink-0 overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={report.imageUrl} alt="report" className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-slate-900 truncate">ID: {report.id}</p>
+                  <p className="text-xs font-medium text-slate-500 truncate">User: {report.userId}</p>
+                  <div className="flex gap-2 mt-1">
+                    <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">{report.status}</span>
+                    <span className="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded capitalize">{report.type}</span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2 shrink-0">
+                  <button onClick={() => handleDeleteReport(report.id)} className="bg-rose-50 text-rose-600 p-2 rounded-lg hover:bg-rose-100 transition"><Trash2 size={16} /></button>
+                  <button onClick={() => handleBlockUser(report.userId)} className="bg-orange-50 text-orange-600 p-2 rounded-lg hover:bg-orange-100 transition"><Ban size={16} /></button>
+                </div>
               </div>
             ))}
             {reports.length === 0 && <div className="p-8 text-center text-slate-500">Database is empty.</div>}

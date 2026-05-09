@@ -19,7 +19,7 @@ export default function ProfilePage() {
   
   const router = useRouter();
   
-  const ADMIN_EMAILS = ["kpsumanth212@gmail.com"];
+  const ADMIN_EMAILS = ["kpsumanth212@gmail.com", "sppranav2005@gmail.com"];
 
   useEffect(() => {
     // Listen for auth state
@@ -73,7 +73,7 @@ export default function ProfilePage() {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      router.push("/login");
+      router.push("/");
     } catch (error) {
       console.error("Error signing out", error);
     }

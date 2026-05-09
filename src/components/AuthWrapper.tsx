@@ -8,16 +8,19 @@ import { motion } from "framer-motion";
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
+      setIsAuthenticating(false);
     });
     return () => unsubscribe();
   }, []);
 
   const handleGoogleSignIn = async () => {
+    setIsAuthenticating(true);
     try {
       // Always use popup. signInWithRedirect fails on mobile due to 3rd-party cookie blocking (ITP)
       await signInWithPopup(auth, googleProvider);
@@ -26,13 +29,15 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
       if (error.code !== 'auth/popup-closed-by-user') {
         alert("Failed to sign in: " + error.message);
       }
+      setIsAuthenticating(false); // Only reset if failed. If success, onAuthStateChanged will handle it.
     }
   };
 
-  if (loading) {
+  if (loading || isAuthenticating) {
     return (
-      <div className="w-full h-[100dvh] flex items-center justify-center bg-white dark:bg-zinc-950 transition-colors">
-         <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-200 dark:border-zinc-800 border-t-slate-900 dark:border-t-zinc-100"></div>
+      <div className="w-full h-[100dvh] flex flex-col items-center justify-center bg-white dark:bg-zinc-950 transition-colors gap-4">
+         <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-200 dark:border-zinc-800 border-t-emerald-500"></div>
+         {isAuthenticating && <p className="text-slate-500 font-medium animate-pulse">Authenticating...</p>}
       </div>
     );
   }

@@ -24,6 +24,7 @@ interface Report {
 
 export default function FeedPage() {
   const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
   
   // Interactive State
@@ -119,6 +120,8 @@ export default function FeedPage() {
         setReports(sortedData.filter(r => r.status !== "resolved"));
       } catch (error) {
         console.error("Error fetching feed:", error);
+      } finally {
+        setLoading(false);
       }
     }
     fetchFeed();
@@ -138,17 +141,19 @@ export default function FeedPage() {
       </div>
 
       <div className="flex-1 w-full max-w-xl mx-auto pb-24 md:pb-8">
-        {reports.length === 0 && (
+        {loading ? (
+           <div className="w-full h-[60vh] flex items-center justify-center">
+             <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 dark:border-zinc-800 border-t-emerald-500"></div>
+           </div>
+        ) : reports.length === 0 ? (
            <div className="w-full h-[60vh] flex flex-col items-center justify-center text-slate-500 dark:text-zinc-400 p-8 text-center">
               <AlertCircle size={48} className="mb-4 text-slate-300 dark:text-zinc-700" />
               <p className="text-xl font-bold text-slate-900 dark:text-zinc-50">No active reports nearby!</p>
               <p className="text-sm mt-2 text-slate-500 dark:text-zinc-400">Your city is looking clean today.</p>
            </div>
-        )}
-
-        {/* Instagram Style Feed */}
-        <div className="flex flex-col bg-slate-50 dark:bg-zinc-950">
-          <AnimatePresence>
+        ) : (
+          <div className="flex flex-col bg-slate-50 dark:bg-zinc-950">
+            <AnimatePresence>
             {reports.map((report, idx) => {
                const reportDate = new Date(report.reportedAt);
                const timeAgo = Math.floor((Date.now() - reportDate.getTime()) / 3600000) + "h ago";
@@ -245,6 +250,7 @@ export default function FeedPage() {
             })}
           </AnimatePresence>
         </div>
+        )}
 
         {/* Comments Overlay */}
         <AnimatePresence>
