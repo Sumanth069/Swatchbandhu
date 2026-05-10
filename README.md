@@ -2,7 +2,7 @@
   <img src="public/logo.png" width="120" height="120" alt="SwachBandhu Logo" style="border-radius: 20px;" />
   <br/>
   <h1>SwachBandhu</h1>
-  <p><strong>Namma Ooru, Namma Kasa</strong></p>
+  <p><strong>REPORT ಮಾಡಿ, CHANGE ನೋಡಿ</strong></p>
   <p><em>The Next-Generation Civic Social Network</em></p>
   <br/>
   
