@@ -70,11 +70,24 @@ If it passes all rules and is genuine outdoor pollution, analyze it and respond 
             { inlineData: { mimeType, data: base64String } }
           ]
         }
-      ]
+      ],
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'OBJECT',
+          properties: {
+            isGarbage: { type: 'BOOLEAN' },
+            estimatedVolume: { type: 'INTEGER' },
+            type: { type: 'STRING' },
+            confidence: { type: 'INTEGER' }
+          },
+          required: ['isGarbage', 'estimatedVolume', 'type', 'confidence']
+        }
+      }
     });
 
     const rawText = response.text || "{}"
-    const cleanJsonStr = rawText.replace(/```json/g, '').replace(/```/g, '').trim()
+    const cleanJsonStr = rawText.trim()
     const result = JSON.parse(cleanJsonStr)
 
     // Force rejection if confidence is too low or it didn't explicitly say true

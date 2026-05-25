@@ -24,12 +24,18 @@ export default function ReportPage() {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [commentsDisabled, setCommentsDisabled] = useState(false);
 
+  // Zoom and Camera Facing states
+  const [zoom, setZoom] = useState(1);
+  const [hasHardwareZoom, setHasHardwareZoom] = useState(false);
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    startCamera();
+    startCamera(facingMode);
     fetchLocation();
     return () => stopCamera();
   }, []);
@@ -54,14 +60,36 @@ export default function ReportPage() {
     }
   };
 
-  const startCamera = async () => {
+  const startCamera = async (mode: 'environment' | 'user' = 'environment') => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      stopCamera();
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: mode } 
+      });
       setIsCameraOpen(true);
-      setTimeout(() => {
+      setFacingMode(mode);
+      setHasHardwareZoom(false);
+      setZoom(1);
+      setTimeout(async () => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.play().catch(e => console.warn("Play interrupted", e));
+
+          // Check hardware zoom support
+          const track = stream.getVideoTracks()[0];
+          if (track && typeof track.getCapabilities === 'function') {
+            const capabilities = track.getCapabilities() as any;
+            if (capabilities && capabilities.zoom) {
+              setHasHardwareZoom(true);
+              try {
+                await track.applyConstraints({
+                  advanced: [{ zoom: capabilities.zoom.min || 1 }]
+                } as any);
+              } catch (e) {
+                console.warn("Init zoom failed", e);
+              }
+            }
+          }
         }
       }, 100);
     } catch (err) {
@@ -78,6 +106,52 @@ export default function ReportPage() {
     }
   };
 
+  const handleZoomToggle = async () => {
+    const nextZoom = zoom === 1 ? 2 : zoom === 2 ? 3 : 1;
+    setZoom(nextZoom);
+    
+    if (hasHardwareZoom && videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      const track = stream.getVideoTracks()[0];
+      if (track) {
+        try {
+          const capabilities = track.getCapabilities() as any;
+          if (capabilities && capabilities.zoom) {
+            const min = capabilities.zoom.min || 1;
+            const max = capabilities.zoom.max || 3;
+            const targetZoom = nextZoom === 1 ? min : nextZoom === 2 ? (min + max) / 2 : max;
+            await track.applyConstraints({
+              advanced: [{ zoom: targetZoom }]
+            } as any);
+          }
+        } catch (e) {
+          console.warn("Failed to apply hardware zoom", e);
+        }
+      }
+    }
+  };
+
+  const toggleCameraFacing = () => {
+    const nextFacing = facingMode === 'environment' ? 'user' : 'environment';
+    startCamera(nextFacing);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setPhotoPreview(event.target.result as string);
+          setPhotoFile(file);
+          analyzeImage(file);
+          stopCamera();
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
@@ -86,7 +160,16 @@ export default function ReportPage() {
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        if (!hasHardwareZoom && zoom > 1) {
+          const sWidth = video.videoWidth / zoom;
+          const sHeight = video.videoHeight / zoom;
+          const sx = (video.videoWidth - sWidth) / 2;
+          const sy = (video.videoHeight - sHeight) / 2;
+          ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
+        } else {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        }
+        
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         setPhotoPreview(dataUrl);
         canvas.toBlob((blob) => {
@@ -105,7 +188,7 @@ export default function ReportPage() {
     setPhotoPreview(null);
     setPhotoFile(null);
     setAiAnalysis(null);
-    startCamera();
+    startCamera(facingMode);
   };
 
   const analyzeImage = async (file: File) => {
@@ -133,7 +216,7 @@ export default function ReportPage() {
     if (aiAnalysis && !aiAnalysis.isGarbage) {
        alert("AI Analysis detected this is not garbage. Please take a clearer picture.");
        return;
-    }
+     }
 
     setIsUploading(true);
     try {
@@ -194,6 +277,102 @@ export default function ReportPage() {
       exit={{ opacity: 0, x: -20 }}
       className="flex flex-col h-[100dvh] bg-slate-50/50"
     >
+      {/* Full-screen Camera overlay when capturing */}
+      {isCameraOpen && !photoPreview && (
+        <div className="fixed inset-0 bg-black z-50 flex flex-col justify-between overflow-hidden">
+          {/* Video stream background */}
+          <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-black">
+            <video 
+              ref={videoRef} 
+              className="w-full h-full object-cover transition-transform duration-200" 
+              style={!hasHardwareZoom && zoom > 1 ? { transform: `scale(${zoom})`, transformOrigin: 'center' } : {}}
+              playsInline 
+              autoPlay 
+              muted 
+            />
+          </div>
+
+          {/* Top Bar Overlay */}
+          <div className="relative z-10 w-full bg-gradient-to-b from-black/80 to-transparent p-4 flex items-center justify-between">
+            <button 
+              onClick={() => { stopCamera(); setIsCameraOpen(false); }} 
+              className="text-white bg-black/40 hover:bg-black/60 p-2.5 rounded-full backdrop-blur-md transition active:scale-95"
+            >
+              <ArrowLeft size={24} />
+            </button>
+            <h2 className="text-white font-extrabold text-lg tracking-tight drop-shadow-md">Capture Garbage</h2>
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="text-white bg-black/40 hover:bg-black/60 p-2.5 rounded-full backdrop-blur-md transition active:scale-95"
+              title="Upload from gallery"
+            >
+              <UploadCloud size={24} />
+            </button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              accept="image/*" 
+              onChange={handleFileUpload} 
+              className="hidden" 
+            />
+          </div>
+
+          {/* Center Target Frame (HUD guide) */}
+          <div className="relative z-10 pointer-events-none flex-1 flex items-center justify-center p-8">
+            <div className="w-64 h-64 border-2 border-white/30 rounded-3xl relative flex items-center justify-center">
+              <div className="absolute top-4 left-4 w-6 h-6 border-t-4 border-l-4 border-emerald-400 rounded-tl-md"></div>
+              <div className="absolute top-4 right-4 w-6 h-6 border-t-4 border-r-4 border-emerald-400 rounded-tr-md"></div>
+              <div className="absolute bottom-4 left-4 w-6 h-6 border-b-4 border-l-4 border-emerald-400 rounded-bl-md"></div>
+              <div className="absolute bottom-4 right-4 w-6 h-6 border-b-4 border-r-4 border-emerald-400 rounded-br-md"></div>
+              
+              <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">Align waste here</span>
+            </div>
+          </div>
+
+          {/* Bottom Bar Overlay */}
+          <div className="relative z-10 w-full bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 flex flex-col items-center gap-6 pb-safe-bottom">
+            {/* Zoom Selector */}
+            <button 
+              onClick={handleZoomToggle}
+              className="bg-black/60 hover:bg-black/80 text-white font-black text-xs w-11 h-11 rounded-full border border-white/20 shadow-lg flex items-center justify-center backdrop-blur-md transition active:scale-90"
+            >
+              {zoom}X
+            </button>
+
+            <div className="flex items-center justify-between w-full max-w-xs">
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="flex flex-col items-center gap-1.5 text-white/70 hover:text-white transition w-16"
+              >
+                <div className="p-3 bg-white/10 rounded-full hover:bg-white/20 transition active:scale-95">
+                  <UploadCloud size={20} />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider">Gallery</span>
+              </button>
+
+              <button 
+                onClick={handleCapture}
+                className="w-20 h-20 rounded-full border-4 border-white/30 p-1 bg-transparent transition active:scale-90 hover:scale-105"
+              >
+                <div className="w-full h-full rounded-full bg-emerald-500 hover:bg-emerald-600 transition flex items-center justify-center">
+                  <Camera size={28} className="text-white" />
+                </div>
+              </button>
+
+              <button 
+                onClick={toggleCameraFacing}
+                className="flex flex-col items-center gap-1.5 text-white/70 hover:text-white transition w-16"
+              >
+                <div className="p-3 bg-white/10 rounded-full hover:bg-white/20 transition active:scale-95">
+                  <RefreshCw size={20} />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider">Flip</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white/80 backdrop-blur-xl px-4 py-4 flex items-center gap-3 shadow-[0_4px_20px_rgb(0,0,0,0.03)] relative z-10 shrink-0 border-b border-slate-100">
         <button onClick={() => router.back()} className="text-slate-500 hover:bg-slate-100 p-2 rounded-full transition active:scale-95">
           <ArrowLeft size={24} />
@@ -207,30 +386,11 @@ export default function ReportPage() {
         <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
           <h2 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
             <Camera size={18} className="text-emerald-500" />
-            1. Live Capture
+            1. Captured Photo
           </h2>
           
-          <div className="relative w-full aspect-[4/3] bg-black rounded-2xl overflow-hidden shadow-inner">
-            {!photoPreview ? (
-               <>
-                 {isCameraOpen ? (
-                    <>
-                      <video ref={videoRef} className="object-cover w-full h-full" playsInline autoPlay muted />
-                      <button 
-                        onClick={handleCapture}
-                        className="absolute bottom-4 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full border-4 border-white bg-emerald-500 hover:bg-emerald-600 shadow-xl transition transform active:scale-95 flex items-center justify-center"
-                      >
-                         <Camera size={24} className="text-white" />
-                      </button>
-                    </>
-                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-500 text-sm p-4 text-center">
-                       Camera access denied. Please enable permissions.
-                    </div>
-                 )}
-                 <canvas ref={canvasRef} className="hidden" />
-               </>
-            ) : (
+          <div className="relative w-full aspect-[4/3] bg-black rounded-2xl overflow-hidden shadow-inner flex items-center justify-center">
+            {photoPreview ? (
                <>
                  {/* eslint-disable-next-line @next/next/no-img-element */}
                  <img src={photoPreview} alt="Captured" className="w-full h-full object-cover" />
@@ -238,9 +398,32 @@ export default function ReportPage() {
                    onClick={handleRetake}
                    className="absolute top-3 right-3 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 shadow-lg flex items-center gap-1 hover:bg-white transition"
                  >
-                   <RefreshCw size={14} /> Retake
+                   <RefreshCw size={14} /> Retake / Capture
                  </button>
                </>
+            ) : (
+               <div className="flex flex-col items-center gap-4 p-6 text-center">
+                 <button 
+                   onClick={() => startCamera(facingMode)}
+                   className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-3 rounded-2xl shadow-md transition active:scale-95 flex items-center gap-2"
+                 >
+                   <Camera size={20} /> Open Camera
+                 </button>
+                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">or</span>
+                 <button 
+                   onClick={() => fileInputRef.current?.click()}
+                   className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-5 py-2.5 rounded-xl border border-slate-200 transition active:scale-95 flex items-center gap-2 text-sm"
+                 >
+                   <UploadCloud size={16} /> Choose from Gallery
+                 </button>
+                 <input 
+                   type="file" 
+                   ref={fileInputRef} 
+                   accept="image/*" 
+                   onChange={handleFileUpload} 
+                   className="hidden" 
+                 />
+               </div>
             )}
           </div>
         </div>
@@ -286,7 +469,7 @@ export default function ReportPage() {
           </h2>
           {location ? (
             <div className="bg-slate-50 text-emerald-700 p-3 rounded-2xl text-sm font-medium flex items-center justify-between border border-emerald-100">
-              <span className="flex items-center gap-2"><CheckCircle2 size={18} /> GPS Locked <span className="text-emerald-900 ml-1 text-xs">{location.name}</span></span>
+              <span className="flex items-center gap-2"><CheckCircle2 size={18} /> GPS Locked <span className="text-emerald-900 ml-1 text-xs">{location.name} ({location.lat.toFixed(6)}, {location.lon.toFixed(6)})</span></span>
               <button onClick={fetchLocation} className="text-slate-400 hover:text-emerald-600"><RefreshCw size={16} /></button>
             </div>
           ) : (

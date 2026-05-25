@@ -17,8 +17,10 @@ service cloud.firestore {
       allow read: if true;
       // Only logged in users can create a report
       allow create: if request.auth != null;
-      // Only admins can delete or update existing reports
-      allow update, delete: if isAdmin();
+      // Authenticated users can update reports (to like, comment, and resolve cleanups)
+      allow update: if request.auth != null;
+      // Only admins can delete reports
+      allow delete: if isAdmin();
     }
 
     // Batches Collection
@@ -35,6 +37,16 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
       // Admins can read or write any user profile
       allow read, write: if isAdmin();
+    }
+
+    // General Chat Collection
+    match /swatchbandhu_chat/{messageId} {
+      // Anyone can read chat messages
+      allow read: if true;
+      // Only logged in users can post messages
+      allow create: if request.auth != null;
+      // Only admins can update or delete messages
+      allow update, delete: if isAdmin();
     }
     
     // Default deny for anything else

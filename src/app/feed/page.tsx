@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, orderBy, query, doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { collection, getDocs, orderBy, query, doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, limit, addDoc, getDoc, setDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase/client";
 import { MapPin, AlertCircle, Heart, MessageCircle, MoreHorizontal, Share2, Bookmark, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,7 +10,7 @@ import Link from "next/link";
 interface Report {
   id: string;
   imageUrl: string;
-  location: { latitude: number; longitude: number; name?: string };
+  location: { latitude?: number; longitude?: number; name?: string; lat?: number; lon?: number };
   status: string;
   reportedAt: string;
   userId: string;
@@ -22,6 +22,30 @@ interface Report {
   commentsDisabled?: boolean;
 }
 
+export function formatPreciseDate(dateString?: string) {
+  if (!dateString) return "Unknown Date";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "Unknown Date";
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+}
+
 export default function FeedPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +55,15 @@ export default function FeedPage() {
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [newComment, setNewComment] = useState("");
+
+  // Bookmarking / Saving State
+  const [savedPosts, setSavedPosts] = useState<Record<string, boolean>>({});
+
+  // Chatroom State
+  const [showChatroom, setShowChatroom] = useState(false);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [newChatMessage, setNewChatMessage] = useState("");
+  const [loadingChat, setLoadingChat] = useState(true);
 
   const toggleLike = async (id: string) => {
     const user = auth.currentUser;
@@ -46,6 +79,24 @@ export default function FeedPage() {
     } catch (e) {
       console.error("Error updating like", e);
       setLikedPosts(prev => ({ ...prev, [id]: isLiked })); // revert on error
+    }
+  };
+
+  const toggleSave = async (id: string) => {
+    const user = auth.currentUser;
+    if (!user) return alert("Please log in to save reports.");
+
+    const isSaved = savedPosts[id];
+    setSavedPosts(prev => ({ ...prev, [id]: !isSaved }));
+
+    try {
+      const userDocRef = doc(db, "users", user.uid);
+      await setDoc(userDocRef, {
+        savedReportIds: isSaved ? arrayRemove(id) : arrayUnion(id)
+      }, { merge: true });
+    } catch (e) {
+      console.error("Error saving post", e);
+      setSavedPosts(prev => ({ ...prev, [id]: isSaved })); // revert
     }
   };
 
@@ -77,6 +128,27 @@ export default function FeedPage() {
     }
   };
 
+  const handlePostChatMessage = async () => {
+    const user = auth.currentUser;
+    if (!user) return alert("Please log in to send messages.");
+    if (!newChatMessage.trim()) return;
+
+    const messageText = newChatMessage;
+    setNewChatMessage("");
+
+    try {
+      await addDoc(collection(db, "swatchbandhu_chat"), {
+        userId: user.uid,
+        userName: user.displayName || "Citizen Hero",
+        text: messageText,
+        createdAt: new Date().toISOString()
+      });
+    } catch (e) {
+      console.error("Error posting chat message", e);
+      alert("Failed to send message.");
+    }
+  };
+
   const handleShare = async (report: Report) => {
     if (navigator.share) {
       try {
@@ -92,6 +164,29 @@ export default function FeedPage() {
       alert("Sharing is not supported on this browser.");
     }
   };
+
+  // Chatroom Real-time Listener
+  useEffect(() => {
+    if (!showChatroom) return;
+    
+    setLoadingChat(true);
+    const chatQuery = query(
+      collection(db, "swatchbandhu_chat"),
+      orderBy("createdAt", "asc"),
+      limit(100)
+    );
+    
+    const unsubscribe = onSnapshot(chatQuery, (snapshot) => {
+      const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setChatMessages(messages);
+      setLoadingChat(false);
+    }, (error) => {
+      console.error("Chat fetch error:", error);
+      setLoadingChat(false);
+    });
+
+    return () => unsubscribe();
+  }, [showChatroom]);
 
   useEffect(() => {
     async function fetchFeed() {
@@ -116,6 +211,23 @@ export default function FeedPage() {
         setLikedPosts(initialLikes);
         setComments(initialComments);
 
+        // Load saved reports
+        if (user) {
+          try {
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (userDoc.exists()) {
+              const savedIds = userDoc.data().savedReportIds || [];
+              const savedMap: Record<string, boolean> = {};
+              savedIds.forEach((sid: string) => {
+                savedMap[sid] = true;
+              });
+              setSavedPosts(savedMap);
+            }
+          } catch (e) {
+            console.error("Error loading saved posts", e);
+          }
+        }
+
         const sortedData = data.sort((a, b) => new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime());
         setReports(sortedData.filter(r => r.status !== "resolved"));
       } catch (error) {
@@ -131,12 +243,16 @@ export default function FeedPage() {
     <div className="flex flex-col min-h-[100dvh] bg-slate-50 dark:bg-zinc-950 md:flex-1 transition-colors duration-300">
       {/* Header */}
       <div className="bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl px-4 py-3 flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 sticky top-0 z-30 transition-colors duration-300">
-        <h1 className="font-bold text-xl text-slate-900 dark:text-zinc-50 tracking-tight" style={{ fontFamily: "var(--font-plus-jakarta)" }}>
+        <h1 className="font-bold text-xl text-slate-900 dark:text-zinc-50 tracking-tight" style={{ fontFamily: "var(--font-outfit)" }}>
            SwachBandhu
         </h1>
         <div className="flex items-center gap-4 text-slate-900 dark:text-zinc-50">
-           <Heart size={24} className="hover:opacity-70 transition-opacity cursor-pointer" strokeWidth={2} />
-           <MessageCircle size={24} className="hover:opacity-70 transition-opacity cursor-pointer" strokeWidth={2} />
+           <MessageCircle 
+             size={24} 
+             onClick={() => setShowChatroom(true)}
+             className="hover:text-emerald-500 transition-colors cursor-pointer" 
+             strokeWidth={2} 
+           />
         </div>
       </div>
 
@@ -155,9 +271,10 @@ export default function FeedPage() {
           <div className="flex flex-col bg-slate-50 dark:bg-zinc-950">
             <AnimatePresence>
             {reports.map((report, idx) => {
-               const reportDate = new Date(report.reportedAt);
-               const timeAgo = Math.floor((Date.now() - reportDate.getTime()) / 3600000) + "h ago";
+               const timeAgo = formatPreciseDate(report.reportedAt);
                const isCitizen = report.userId !== "anonymous";
+               const latVal = report.location?.lat ?? report.location?.latitude;
+               const lonVal = report.location?.lon ?? report.location?.longitude;
 
                return (
                 <motion.article 
@@ -180,6 +297,11 @@ export default function FeedPage() {
                             <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-1 mt-0.5">
                                <MapPin size={10} /> {report.location?.name || "Bengaluru Urban"}
                             </span>
+                            {latVal !== undefined && lonVal !== undefined && (
+                              <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500 mt-0.5 leading-none">
+                                GPS: {latVal.toFixed(6)}, {lonVal.toFixed(6)}
+                              </span>
+                            )}
                          </div>
                       </div>
                       <button className="text-slate-400 hover:text-slate-900 dark:hover:text-zinc-50 p-1 transition-colors">
@@ -210,7 +332,12 @@ export default function FeedPage() {
                          </button>
                          <button onClick={() => handleShare(report)} className="hover:opacity-70 transition-opacity active:scale-95 transform"><Share2 size={22} strokeWidth={2} /></button>
                       </div>
-                      <button className="text-slate-900 dark:text-zinc-50 hover:opacity-70 transition-opacity active:scale-95 transform"><Bookmark size={24} strokeWidth={2} /></button>
+                      <button 
+                        onClick={() => toggleSave(report.id)} 
+                        className="text-slate-900 dark:text-zinc-50 hover:opacity-70 transition-opacity active:scale-95 transform"
+                      >
+                        <Bookmark size={24} strokeWidth={2} className={savedPosts[report.id] ? "fill-emerald-500 text-emerald-500" : ""} />
+                      </button>
                    </div>
 
                    {/* Post Details & Caption */}
@@ -248,79 +375,150 @@ export default function FeedPage() {
                 </motion.article>
                );
             })}
-          </AnimatePresence>
-        </div>
+            </AnimatePresence>
+          </div>
         )}
-
-        {/* Comments Overlay */}
-        <AnimatePresence>
-        {activeCommentId && (
-          <motion.div 
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-0 z-50 bg-white dark:bg-zinc-900 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)] h-[70vh] flex flex-col border-t border-slate-200 dark:border-zinc-800 md:w-[400px] md:right-auto md:left-1/2 md:-translate-x-1/2 md:bottom-10 md:rounded-3xl md:h-[600px] md:border md:shadow-2xl"
-          >
-             {/* Handle bar for dragging visual */}
-             <div className="w-full flex justify-center pt-3 pb-1">
-                <div className="w-12 h-1.5 bg-slate-200 dark:bg-zinc-700 rounded-full"></div>
-             </div>
-
-             <div className="flex justify-between items-center px-5 pb-3 border-b border-slate-100 dark:border-zinc-800">
-                <h3 className="font-bold text-slate-900 dark:text-zinc-50 text-base">Comments</h3>
-                <button onClick={() => setActiveCommentId(null)} className="p-1.5 text-slate-400 hover:text-slate-900 dark:hover:text-zinc-50 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
-                   <X size={18} />
-                </button>
-             </div>
-             
-             <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-6">
-                {comments[activeCommentId]?.length === 0 || !comments[activeCommentId] ? (
-                  <div className="text-slate-400 text-center py-10 text-sm font-medium">No comments yet. Be the first!</div>
-                ) : (
-                  comments[activeCommentId]?.map(comment => (
-                    <div key={comment.id} className="flex gap-3">
-                       <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-emerald-900 dark:text-emerald-100 font-bold text-xs shrink-0 mt-0.5 border border-emerald-200 dark:border-emerald-800">
-                         {comment.user ? comment.user.charAt(0).toUpperCase() : "U"}
-                       </div>
-                       <div>
-                          <p className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">
-                             <span className="font-bold mr-2 text-slate-900 dark:text-zinc-50">{comment.user}</span>
-                             {comment.text}
-                          </p>
-                          <div className="flex items-center gap-4 mt-1.5 text-xs text-slate-500 dark:text-zinc-500 font-medium">
-                             <span>{new Date(comment.time).toLocaleDateString() === new Date().toLocaleDateString() ? 'Today' : new Date(comment.time).toLocaleDateString()}</span>
-                             <button className="hover:text-slate-900 dark:hover:text-zinc-300 transition-colors">Reply</button>
-                          </div>
-                       </div>
-                       <button className="ml-auto shrink-0 self-center text-slate-400 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"><Heart size={14} /></button>
-                    </div>
-                  ))
-                )}
-             </div>
-
-             <div className="p-3 px-4 border-t border-slate-100 dark:border-zinc-800 flex items-center gap-3 bg-white dark:bg-zinc-900 mb-safe">
-                <div className="w-8 h-8 rounded-full bg-slate-900 dark:bg-zinc-100 flex items-center justify-center text-white dark:text-zinc-900 font-bold text-xs shrink-0">U</div>
-                <input 
-                  type="text" 
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handlePostComment()}
-                  placeholder="Add a comment..." 
-                  className="flex-1 bg-transparent border-none px-2 py-2 text-sm focus:ring-0 outline-none text-slate-900 dark:text-zinc-50 placeholder:text-slate-400 dark:placeholder:text-zinc-500" 
-                />
-                <button 
-                  onClick={handlePostComment}
-                  disabled={!newComment.trim()}
-                  className="text-emerald-600 dark:text-emerald-400 font-bold text-sm px-2 hover:opacity-70 transition-opacity disabled:opacity-30"
-                >
-                  Post
-                </button>
-             </div>
-          </motion.div>
-        )}
-        </AnimatePresence>
       </div>
+
+      {/* General Chatroom Drawer */}
+      <AnimatePresence>
+      {showChatroom && (
+        <motion.div 
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          exit={{ y: "100%" }}
+          transition={{ type: "spring", damping: 30, stiffness: 300 }}
+          className="fixed inset-x-0 bottom-0 z-50 bg-white dark:bg-zinc-900 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)] h-[75vh] flex flex-col border-t border-slate-200 dark:border-zinc-800 md:w-[400px] md:right-auto md:left-1/2 md:-translate-x-1/2 md:bottom-10 md:rounded-3xl md:h-[600px] md:border md:shadow-2xl"
+        >
+           {/* Handle bar for dragging visual */}
+           <div className="w-full flex justify-center pt-3 pb-1">
+              <div className="w-12 h-1.5 bg-slate-200 dark:bg-zinc-700 rounded-full"></div>
+           </div>
+
+           <div className="flex justify-between items-center px-5 pb-3 border-b border-slate-100 dark:border-zinc-800">
+              <h3 className="font-bold text-slate-900 dark:text-zinc-50 text-base">Civic Chatroom</h3>
+              <button onClick={() => setShowChatroom(false)} className="p-1.5 text-slate-400 hover:text-slate-900 dark:hover:text-zinc-50 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
+                 <X size={18} />
+              </button>
+           </div>
+           
+           <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
+              {loadingChat ? (
+                <div className="flex justify-center py-10">
+                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-slate-200 border-t-emerald-500"></div>
+                </div>
+              ) : chatMessages.length === 0 ? (
+                <div className="text-slate-400 text-center py-10 text-sm font-medium">Welcome to SwachBandhu chat! Ask questions, share news, or coordinate cleanups.</div>
+              ) : (
+                chatMessages.map(msg => {
+                  const isMe = msg.userId === auth.currentUser?.uid;
+                  return (
+                    <div key={msg.id} className={`flex gap-3 max-w-[85%] ${isMe ? 'self-end flex-row-reverse' : 'self-start'}`}>
+                       <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-indigo-900 dark:text-indigo-200 font-bold text-xs shrink-0 mt-0.5 border border-indigo-200 dark:border-indigo-900">
+                         {msg.userName ? msg.userName.charAt(0).toUpperCase() : "U"}
+                       </div>
+                       <div className={`p-3 rounded-2xl ${isMe ? 'bg-emerald-500 text-white rounded-tr-none' : 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 rounded-tl-none'}`}>
+                          {!isMe && <p className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 mb-0.5">{msg.userName}</p>}
+                          <p className="text-sm leading-snug break-all">{msg.text}</p>
+                          <p className={`text-[8px] font-medium mt-1 text-right ${isMe ? 'text-white/60' : 'text-slate-400'}`}>
+                             {formatPreciseDate(msg.createdAt)}
+                          </p>
+                       </div>
+                    </div>
+                  );
+                })
+              )}
+           </div>
+
+           <div className="p-3 px-4 border-t border-slate-100 dark:border-zinc-800 flex items-center gap-3 bg-white dark:bg-zinc-900 mb-safe">
+              <input 
+                type="text" 
+                value={newChatMessage}
+                onChange={(e) => setNewChatMessage(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handlePostChatMessage()}
+                placeholder="Type a message..." 
+                className="flex-1 bg-transparent border-none px-2 py-2 text-sm focus:ring-0 outline-none text-slate-900 dark:text-zinc-50 placeholder:text-slate-400 dark:placeholder:text-zinc-500" 
+              />
+              <button 
+                onClick={handlePostChatMessage}
+                disabled={!newChatMessage.trim()}
+                className="text-emerald-600 dark:text-emerald-400 font-bold text-sm px-2 hover:opacity-70 transition-opacity disabled:opacity-30"
+              >
+                Send
+              </button>
+           </div>
+        </motion.div>
+      )}
+      </AnimatePresence>
+
+      {/* Comments Overlay */}
+      <AnimatePresence>
+      {activeCommentId && (
+        <motion.div 
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          exit={{ y: "100%" }}
+          transition={{ type: "spring", damping: 30, stiffness: 300 }}
+          className="fixed inset-x-0 bottom-0 z-50 bg-white dark:bg-zinc-900 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)] h-[70vh] flex flex-col border-t border-slate-200 dark:border-zinc-800 md:w-[400px] md:right-auto md:left-1/2 md:-translate-x-1/2 md:bottom-10 md:rounded-3xl md:h-[600px] md:border md:shadow-2xl"
+        >
+           {/* Handle bar for dragging visual */}
+           <div className="w-full flex justify-center pt-3 pb-1">
+              <div className="w-12 h-1.5 bg-slate-200 dark:bg-zinc-700 rounded-full"></div>
+           </div>
+
+           <div className="flex justify-between items-center px-5 pb-3 border-b border-slate-100 dark:border-zinc-800">
+              <h3 className="font-bold text-slate-900 dark:text-zinc-50 text-base">Comments</h3>
+              <button onClick={() => setActiveCommentId(null)} className="p-1.5 text-slate-400 hover:text-slate-900 dark:hover:text-zinc-50 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
+                 <X size={18} />
+              </button>
+           </div>
+           
+           <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-6">
+              {comments[activeCommentId]?.length === 0 || !comments[activeCommentId] ? (
+                <div className="text-slate-400 text-center py-10 text-sm font-medium">No comments yet. Be the first!</div>
+              ) : (
+                comments[activeCommentId]?.map(comment => (
+                  <div key={comment.id} className="flex gap-3">
+                     <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-emerald-900 dark:text-emerald-100 font-bold text-xs shrink-0 mt-0.5 border border-emerald-200 dark:border-emerald-800">
+                       {comment.user ? comment.user.charAt(0).toUpperCase() : "U"}
+                     </div>
+                     <div>
+                        <p className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">
+                           <span className="font-bold mr-2 text-slate-900 dark:text-zinc-50">{comment.user}</span>
+                           {comment.text}
+                        </p>
+                        <div className="flex items-center gap-4 mt-1.5 text-xs text-slate-500 dark:text-zinc-500 font-medium">
+                           <span>{formatPreciseDate(comment.time)}</span>
+                           <button className="hover:text-slate-900 dark:hover:text-zinc-300 transition-colors">Reply</button>
+                        </div>
+                     </div>
+                     <button className="ml-auto shrink-0 self-center text-slate-400 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"><Heart size={14} /></button>
+                  </div>
+                ))
+              )}
+           </div>
+
+           <div className="p-3 px-4 border-t border-slate-100 dark:border-zinc-800 flex items-center gap-3 bg-white dark:bg-zinc-900 mb-safe">
+              <div className="w-8 h-8 rounded-full bg-slate-900 dark:bg-zinc-100 flex items-center justify-center text-white dark:text-zinc-900 font-bold text-xs shrink-0">U</div>
+              <input 
+                type="text" 
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handlePostComment()}
+                placeholder="Add a comment..." 
+                className="flex-1 bg-transparent border-none px-2 py-2 text-sm focus:ring-0 outline-none text-slate-900 dark:text-zinc-50 placeholder:text-slate-400 dark:placeholder:text-zinc-500" 
+              />
+              <button 
+                onClick={handlePostComment}
+                disabled={!newComment.trim()}
+                className="text-emerald-600 dark:text-emerald-400 font-bold text-sm px-2 hover:opacity-70 transition-opacity disabled:opacity-30"
+              >
+                Post
+              </button>
+           </div>
+        </motion.div>
+      )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -73,10 +73,23 @@ Respond ONLY with valid, raw JSON in this exact structure:
                { inlineData: { mimeType, data: base64String } }
              ]
            }
-         ]
+         ],
+         config: {
+           responseMimeType: 'application/json',
+           responseSchema: {
+             type: 'OBJECT',
+             properties: {
+               isMatch: { type: 'BOOLEAN' },
+               isCleaned: { type: 'BOOLEAN' },
+               confidenceScore: { type: 'INTEGER' },
+               reason: { type: 'STRING' }
+             },
+             required: ['isMatch', 'isCleaned', 'confidenceScore', 'reason']
+           }
+         }
        });
        const rawText = response.text || "{}"
-       const cleanJsonStr = rawText.replace(/```json/g, '').replace(/```/g, '').trim()
+       const cleanJsonStr = rawText.trim()
        aiResult = JSON.parse(cleanJsonStr)
     } catch (e) {
        return NextResponse.json({ error: 'AI Evaluation Failed' }, { status: 500 })
