@@ -32,7 +32,6 @@ export default function ReportPage() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     startCamera(facingMode);
@@ -64,7 +63,11 @@ export default function ReportPage() {
     try {
       stopCamera();
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: mode } 
+        video: { 
+          facingMode: mode,
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        } 
       });
       setIsCameraOpen(true);
       setFacingMode(mode);
@@ -106,10 +109,8 @@ export default function ReportPage() {
     }
   };
 
-  const handleZoomToggle = async () => {
-    const nextZoom = zoom === 1 ? 2 : zoom === 2 ? 3 : 1;
-    setZoom(nextZoom);
-    
+  const applyZoom = async (targetZoom: number) => {
+    setZoom(targetZoom);
     if (hasHardwareZoom && videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       const track = stream.getVideoTracks()[0];
@@ -119,9 +120,9 @@ export default function ReportPage() {
           if (capabilities && capabilities.zoom) {
             const min = capabilities.zoom.min || 1;
             const max = capabilities.zoom.max || 3;
-            const targetZoom = nextZoom === 1 ? min : nextZoom === 2 ? (min + max) / 2 : max;
+            const target = targetZoom === 1 ? min : min + (max - min) / 2;
             await track.applyConstraints({
-              advanced: [{ zoom: targetZoom }]
+              advanced: [{ zoom: target }]
             } as any);
           }
         } catch (e) {
@@ -136,21 +137,7 @@ export default function ReportPage() {
     startCamera(nextFacing);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setPhotoPreview(event.target.result as string);
-          setPhotoFile(file);
-          analyzeImage(file);
-          stopCamera();
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+
 
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current) {
@@ -281,7 +268,7 @@ export default function ReportPage() {
       {isCameraOpen && !photoPreview && (
         <div className="fixed inset-0 bg-black z-50 flex flex-col justify-between overflow-hidden">
           {/* Video stream background */}
-          <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-black">
+          <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-black overflow-hidden">
             <video 
               ref={videoRef} 
               className="w-full h-full object-cover transition-transform duration-200" 
@@ -301,20 +288,7 @@ export default function ReportPage() {
               <ArrowLeft size={24} />
             </button>
             <h2 className="text-white font-extrabold text-lg tracking-tight drop-shadow-md">Capture Garbage</h2>
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              className="text-white bg-black/40 hover:bg-black/60 p-2.5 rounded-full backdrop-blur-md transition active:scale-95"
-              title="Upload from gallery"
-            >
-              <UploadCloud size={24} />
-            </button>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              accept="image/*" 
-              onChange={handleFileUpload} 
-              className="hidden" 
-            />
+            <div className="w-10 h-10" />
           </div>
 
           {/* Center Target Frame (HUD guide) */}
@@ -331,24 +305,24 @@ export default function ReportPage() {
 
           {/* Bottom Bar Overlay */}
           <div className="relative z-10 w-full bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 flex flex-col items-center gap-6 pb-safe-bottom">
-            {/* Zoom Selector */}
-            <button 
-              onClick={handleZoomToggle}
-              className="bg-black/60 hover:bg-black/80 text-white font-black text-xs w-11 h-11 rounded-full border border-white/20 shadow-lg flex items-center justify-center backdrop-blur-md transition active:scale-90"
-            >
-              {zoom}X
-            </button>
+            {/* Zoom Selector (1x & 2x options) */}
+            <div className="flex gap-2 bg-black/60 p-1 rounded-full border border-white/10 backdrop-blur-md">
+              <button 
+                onClick={() => applyZoom(1)}
+                className={`text-xs font-black px-4 py-2 rounded-full transition active:scale-95 ${zoom === 1 ? 'bg-emerald-500 text-white shadow-md' : 'text-white/60 hover:text-white'}`}
+              >
+                1X
+              </button>
+              <button 
+                onClick={() => applyZoom(2)}
+                className={`text-xs font-black px-4 py-2 rounded-full transition active:scale-95 ${zoom === 2 ? 'bg-emerald-500 text-white shadow-md' : 'text-white/60 hover:text-white'}`}
+              >
+                2X
+              </button>
+            </div>
 
             <div className="flex items-center justify-between w-full max-w-xs">
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center gap-1.5 text-white/70 hover:text-white transition w-16"
-              >
-                <div className="p-3 bg-white/10 rounded-full hover:bg-white/20 transition active:scale-95">
-                  <UploadCloud size={20} />
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider">Gallery</span>
-              </button>
+              <div className="w-16" />
 
               <button 
                 onClick={handleCapture}
@@ -409,20 +383,6 @@ export default function ReportPage() {
                  >
                    <Camera size={20} /> Open Camera
                  </button>
-                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">or</span>
-                 <button 
-                   onClick={() => fileInputRef.current?.click()}
-                   className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-5 py-2.5 rounded-xl border border-slate-200 transition active:scale-95 flex items-center gap-2 text-sm"
-                 >
-                   <UploadCloud size={16} /> Choose from Gallery
-                 </button>
-                 <input 
-                   type="file" 
-                   ref={fileInputRef} 
-                   accept="image/*" 
-                   onChange={handleFileUpload} 
-                   className="hidden" 
-                 />
                </div>
             )}
           </div>
@@ -504,6 +464,7 @@ export default function ReportPage() {
           {isUploading ? "Transmitting..." : "Submit Report"}
         </button>
       </div>
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
     </motion.div>
   );
 }
