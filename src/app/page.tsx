@@ -6,6 +6,7 @@ import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { Trash2, AlertCircle, RefreshCw, MapPin, Navigation } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import AnimatedTagline from "@/components/AnimatedTagline";
 
 // Dynamically import map component to avoid SSR issues
 const MapComponent = dynamic(() => import("@/components/MapComponent"), { 
@@ -64,9 +65,11 @@ export default function Home() {
       <div className="absolute left-4 top-4 z-40 md:hidden flex items-center gap-3 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-lg border border-slate-200 dark:border-zinc-800 transition-colors">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain rounded-xl shadow-sm border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900" />
-        <div className="flex flex-col">
-          <span className="text-xs font-black text-slate-900 dark:text-zinc-50 leading-tight">SwachBandhu</span>
-          <span className="text-[9px] font-black text-emerald-500 tracking-wider uppercase">REPORT ಮಾಡಿ, CHANGE ನೋಡಿ</span>
+        <div className="flex flex-col justify-center">
+          <span className="text-xs font-black text-slate-900 dark:text-zinc-50 leading-none">SwachBandhu</span>
+          <div className="text-[10px] font-bold text-emerald-500 tracking-wider uppercase h-4 w-28 relative overflow-hidden flex items-center mt-0.5">
+            <AnimatedTagline className="text-emerald-500 font-extrabold text-[10px] w-full" />
+          </div>
         </div>
       </div>
       {/* Floating Action Button for Location centering */}
