@@ -68,7 +68,7 @@ export default function Home() {
         <div className="flex flex-col justify-center">
           <span className="text-xs font-black text-slate-900 dark:text-zinc-50 leading-none">SwachBandhu</span>
           <div className="text-[10px] font-bold text-emerald-500 tracking-wider uppercase h-4 w-28 relative overflow-hidden flex items-center mt-0.5">
-            <AnimatedTagline className="text-emerald-500 font-extrabold text-[10px] w-full" />
+            <AnimatedTagline className="text-emerald-500 font-extrabold text-[10px] w-full" justifyClass="justify-start" />
           </div>
         </div>
       </div>
