@@ -12,8 +12,49 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   useEffect(() => {
+    // Check local storage for quick cached user to prevent showing login screen
+    const cachedUser = typeof window !== 'undefined' ? localStorage.getItem("sb_user") : null;
+    if (cachedUser) {
+      try {
+        setUser(JSON.parse(cachedUser));
+        setLoading(false);
+      } catch (e) {}
+    }
+
+    // Upfront Permissions Request
+    if (typeof navigator !== 'undefined') {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          () => console.log("Location permission verified"),
+          () => console.warn("Location permission not granted upfront"),
+          { timeout: 5000 }
+        );
+      }
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(stream => {
+            stream.getTracks().forEach(track => track.stop());
+            console.log("Camera permission verified");
+          })
+          .catch(err => {
+            console.warn("Camera permission not granted upfront", err);
+          });
+      }
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+      if (currentUser) {
+        setUser(currentUser);
+        localStorage.setItem("sb_user", JSON.stringify({
+          uid: currentUser.uid,
+          displayName: currentUser.displayName,
+          email: currentUser.email,
+          photoURL: currentUser.photoURL
+        }));
+      } else {
+        setUser(null);
+        localStorage.removeItem("sb_user");
+      }
       setLoading(false);
       setIsAuthenticating(false);
     });

@@ -15,13 +15,29 @@ export default function RewardsPage() {
     async function fetchCoins() {
       if (!auth.currentUser) return setCoins(0);
       try {
-        const q = query(collection(db, "swatchbandhu_v2_reports"), where("userId", "==", auth.currentUser.uid));
-        const snapshot = await getDocs(q);
-        let cleaned = 0;
-        snapshot.forEach(doc => {
-          if (doc.data().status === "resolved") cleaned++;
+        const currentUserId = auth.currentUser.uid;
+        const reportsQuery = query(collection(db, "swatchbandhu_v2_reports"), where("userId", "==", currentUserId));
+        const cleanupsQuery = query(collection(db, "swatchbandhu_v2_reports"), where("cleanerId", "==", currentUserId));
+        
+        const [reportsSnap, cleanupsSnap] = await Promise.all([
+          getDocs(reportsQuery),
+          getDocs(cleanupsQuery)
+        ]);
+
+        const cleanupsMap = new Map<string, any>();
+        cleanupsSnap.docs.forEach(doc => {
+          cleanupsMap.set(doc.id, doc.data());
         });
-        setCoins(cleaned * 100);
+        
+        // Include legacy cleanups
+        reportsSnap.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.status === "resolved" && !data.cleanerId) {
+            cleanupsMap.set(doc.id, data);
+          }
+        });
+
+        setCoins(cleanupsMap.size * 100);
       } catch (error) {
         console.error("Error fetching coins:", error);
         setCoins(0);

@@ -60,6 +60,15 @@ export default function Home() {
 
   return (
     <div className="relative w-full h-[100dvh]">
+      {/* Mobile Map Tagline Overlay */}
+      <div className="absolute left-4 top-4 z-40 md:hidden flex items-center gap-3 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-lg border border-slate-200 dark:border-zinc-800 transition-colors">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain rounded-xl shadow-sm border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900" />
+        <div className="flex flex-col">
+          <span className="text-xs font-black text-slate-900 dark:text-zinc-50 leading-tight">SwachBandhu</span>
+          <span className="text-[9px] font-black text-emerald-500 tracking-wider uppercase">REPORT ಮಾಡಿ, CHANGE ನೋಡಿ</span>
+        </div>
+      </div>
       {/* Floating Action Button for Location centering */}
       <div className="absolute right-4 bottom-28 z-40 flex flex-col gap-3 md:bottom-32">
         <button 

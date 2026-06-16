@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Camera, MapPin, UploadCloud, ArrowLeft, RefreshCw, CheckCircle2, ShieldAlert } from "lucide-react";
-import { db } from "@/lib/firebase/client";
+import { db, auth } from "@/lib/firebase/client";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -140,8 +140,23 @@ export default function CleanVerifyPage() {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+
+      const maxDimension = 1024;
+      let width = video.videoWidth;
+      let height = video.videoHeight;
+
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
       const ctx = canvas.getContext('2d');
       if (ctx) {
         if (!hasHardwareZoom && zoom > 1) {
@@ -149,18 +164,18 @@ export default function CleanVerifyPage() {
           const sHeight = video.videoHeight / zoom;
           const sx = (video.videoWidth - sWidth) / 2;
           const sy = (video.videoHeight - sHeight) / 2;
-          ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
+          ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, width, height);
         } else {
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          ctx.drawImage(video, 0, 0, width, height);
         }
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
         setPhotoPreview(dataUrl);
         canvas.toBlob((blob) => {
            if (blob) {
              const file = new File([blob], 'after.jpg', { type: 'image/jpeg' });
              setPhotoFile(file);
            }
-        }, 'image/jpeg', 0.8);
+        }, 'image/jpeg', 0.6);
       }
       stopCamera();
     }
@@ -194,7 +209,9 @@ export default function CleanVerifyPage() {
            status: "resolved",
            resolvedAt: new Date().toISOString(),
            resolvedImageUrl: photoPreview,
-           cleanerReason: data.aiReason
+           cleanerReason: data.aiReason,
+           cleanerId: auth.currentUser?.uid || "unknown",
+           cleanerName: auth.currentUser?.displayName || "Citizen Hero"
          });
          setSuccess(true);
          setTimeout(() => router.push("/"), 3000);
@@ -245,7 +262,7 @@ export default function CleanVerifyPage() {
             <video 
               ref={videoRef} 
               className="w-full h-full object-cover transition-transform duration-200" 
-              style={!hasHardwareZoom && zoom > 1 ? { transform: `scale(${zoom})`, transformOrigin: 'center' } : {}}
+              style={{ willChange: "transform", backfaceVisibility: "hidden", ...(!hasHardwareZoom && zoom > 1 ? { transform: `scale(${zoom})`, transformOrigin: 'center' } : {}) }}
               playsInline 
               autoPlay 
               muted 
